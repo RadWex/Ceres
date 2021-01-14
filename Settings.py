@@ -2,21 +2,37 @@
 import configparser
 import pathlib
 
-class Settings():
+
+class SettingsMeta(type):
+    """
+    The Singleton meta class for settings instances
+    """
+
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            instance = super().__call__(*args, **kwargs)
+            cls._instances[cls] = instance
+        return cls._instances[cls]
+
+
+class Settings(metaclass=SettingsMeta):
     printerSettings = {
-        "bed_size_x" : '200',
-        "bed_size_y" : '200',
-        "origin_x" : '0',
-        "origin_y" : '0'
+        "bed_size_x": '200',
+        "bed_size_y": '200',
+        "origin_x": '0',
+        "origin_y": '0'
     }
-    gcode ={
-        "start" : """G28 ; home all axes\nG1 Z5 F1500 ; lift nozzle""",
-        "end" : """G28 X0  ; home X axis\nM84 ; disable motors"""
+    gcode = {
+        "start": """G28 ; home all axes\nG1 Z5 F1500 ; lift nozzle""",
+        "end": """G28 X0  ; home X axis\nM84 ; disable motors"""
     }
+
     def __init__(self):
         self.config = configparser.ConfigParser()
         file = pathlib.Path("config.ini")
-        if not file.exists ():
+        if not file.exists():
             self.create()
             print("File created")
         self.config.read(file)
@@ -44,13 +60,12 @@ class Settings():
             self.config.write(configfile)
 
     def is_number(self, s):
-        s = s.replace(',','.')
+        s = s.replace(',', '.')
         try:
             float(s)
             return True
         except ValueError:
             return False
-
 
 
 if __name__ == "__main__":
