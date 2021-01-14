@@ -1,0 +1,45 @@
+//![2]
+    // Progress
+    Mesh {
+        id: progressMesh
+        source: "meshes/progressbar.obj"
+    }
+
+    Transform {
+        id: progressTransform
+        property real defaultStartAngle: 20
+        property real progressAngle: defaultStartAngle
+        rotationY: progressAngle
+    }
+
+    Entity {
+        property Material progressMaterial: PhongMaterial {
+            ambient: "#80C342"
+            diffuse: "black"
+        }
+
+        components: [progressMesh, progressMaterial, progressTransform]
+    }
+
+--------------------------------------
+
+Entity {
+
+        id: circleEntity
+        property Material circleMaterial: PhongMaterial {
+            diffuse: TextureLoader  {
+                source: "content/cork.jpg"
+            }
+        }
+
+        components: [circleMesh, outlineMaterial, circleTransform]
+    }
+------------------------------------
+
+QQ3D.Model{
+        QQ3D.DefaultMaterial {
+            id: material_001_material
+            diffuseMap: Texture {
+                sourceItem: object2d
+            }
+        }

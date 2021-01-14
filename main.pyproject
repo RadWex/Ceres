@@ -1,0 +1,15 @@
+{
+    "files": ["CorkBoards.qml",
+    "LineEntity.qml",
+    "main.py",
+    "Scene.qml",
+    "main.qml",
+    "QuadViewportFrameGraph.qml",
+    "LineMaterial.qml",
+    "shaders\es2\simpleColor.frag",
+    "shaders\es2\simpleColor.vert",
+    "main.qrc",
+    "GridEntity.qml",
+    "settings.py"
+    ]
+}
