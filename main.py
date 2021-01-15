@@ -4,12 +4,10 @@ import sys
 from PySide2.QtWidgets import QMainWindow, QApplication, QGridLayout
 from PySide2.QtGui import *
 from PySide2.QtQuickWidgets import QQuickWidget
-# from PySide2.QtQuick import QQuickView
 from PySide2.QtCore import QUrl, Property, QObject, Slot, QTimer, Signal, Qt
 from PySide2.QtWidgets import *
 from Settings import Settings
 
-settings = Settings()
 
 class MeshManager(QObject):
     modelChanged = Signal(str)
@@ -22,6 +20,7 @@ class MeshManager(QObject):
     x_scale_Changed = Signal(float)
     y_scale_Changed = Signal(float)
     z_scale_Changed = Signal(float)
+
     def __init__(self, parent=None):
         super(MeshManager, self).__init__(parent)
         self.modelName = ""
@@ -142,12 +141,53 @@ class MeshManager(QObject):
 
 provider = MeshManager()
 
+
+class Window3dManager(QObject):
+    xBedChanged = Signal(int)
+    yBedChanged = Signal(int)
+
+    def __init__(self, parent=None):
+        super(Window3dManager, self).__init__(parent)
+        self._xBed = 235
+        self._yBed = 235
+        self.loadSettings()
+
+    def loadSettings(self):
+        settings = Settings()
+        self._xBed = settings.printerSettings['bed_size_x']
+        self._yBed = settings.printerSettings['bed_size_x']
+
+    @Property(int, notify=xBedChanged)
+    def xBed(self):
+        return self._xBed
+
+    @xBed.setter
+    def xBed(self, new_x):
+        if self._xBed != new_x:
+            self._xBed = new_x
+            self.xBedChanged.emit(new_x)
+
+    @Property(int, notify=yBedChanged)
+    def yBed(self):
+        return self._yBed
+
+    @yBed.setter
+    def yBed(self, new_y):
+        if self._yBed != new_y:
+            self._yBed = new_y
+            self.yBedChanged.emit(new_y)
+
+
+windowProvider = Window3dManager()
+
+
 class GcodeSettings(QWidget):
     def __init__(self):
         super().__init__()
         horizontalLayout = QVBoxLayout()
         self.setLayout(horizontalLayout)
 
+        settings = Settings()
         horizontalLayout.addWidget(QLabel("Start G-code"))
         gcodeTextEditStart = QPlainTextEdit()
         gcodeTextEditStart.insertPlainText(settings.gcode["start"])
@@ -157,6 +197,7 @@ class GcodeSettings(QWidget):
         gcodeTextEditEnd = QPlainTextEdit()
         gcodeTextEditEnd.insertPlainText(settings.gcode["end"])
         horizontalLayout.addWidget(gcodeTextEditEnd)
+
 
 class ModelManipulation(QWidget):
     def __init__(self):
@@ -169,66 +210,66 @@ class ModelManipulation(QWidget):
         horizontalLayout.addLayout(grid)
         self.setLayout(horizontalLayout)
         xLabel = QLabel("X")
-        #xLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # xLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         xLabel.setAlignment(Qt.AlignVCenter)
-        grid.addWidget(xLabel,0,1)
+        grid.addWidget(xLabel, 0, 1)
 
-        grid.addWidget(QLabel("Y"),0,2)
-        grid.addWidget(QLabel("Z"),0,3)
-        grid.addWidget(QLabel("Position:"),1,0)
-        grid.addWidget(QLabel("Rotate:"),2,0)
-        grid.addWidget(QLabel("Scale factors:"),3,0)
-        grid.addWidget(QLabel("Size:"),4,0)
+        grid.addWidget(QLabel("Y"), 0, 2)
+        grid.addWidget(QLabel("Z"), 0, 3)
+        grid.addWidget(QLabel("Position:"), 1, 0)
+        grid.addWidget(QLabel("Rotate:"), 2, 0)
+        grid.addWidget(QLabel("Scale factors:"), 3, 0)
+        grid.addWidget(QLabel("Size:"), 4, 0)
         double_validate = QDoubleValidator()
 
         x_input = QLineEdit("0")
         x_input.setValidator(double_validate)
         x_input.returnPressed.connect(self.get_x)
-        grid.addWidget(x_input,1,1)
+        grid.addWidget(x_input, 1, 1)
         y_input = QLineEdit("0")
         y_input.setValidator(double_validate)
         y_input.returnPressed.connect(self.get_y)
-        grid.addWidget(y_input,1,2)
+        grid.addWidget(y_input, 1, 2)
         z_input = QLineEdit("0")
         z_input.setValidator(double_validate)
         z_input.returnPressed.connect(self.get_z)
-        grid.addWidget(z_input,1,3)
+        grid.addWidget(z_input, 1, 3)
 
         x_rot_input = QLineEdit("0")
         x_rot_input.setValidator(double_validate)
         x_rot_input.returnPressed.connect(self.set_rot_x)
-        grid.addWidget(x_rot_input,2,1)
+        grid.addWidget(x_rot_input, 2, 1)
         y_rot_input = QLineEdit("0")
         y_rot_input.setValidator(double_validate)
         y_rot_input.returnPressed.connect(self.set_rot_y)
-        grid.addWidget(y_rot_input,2,2)
+        grid.addWidget(y_rot_input, 2, 2)
         z_rot_input = QLineEdit("0")
         z_rot_input.setValidator(double_validate)
         z_rot_input.returnPressed.connect(self.set_rot_z)
-        grid.addWidget(z_rot_input,2,3)
+        grid.addWidget(z_rot_input, 2, 3)
 
         x_scale_input = QLineEdit("100")
         x_scale_input.setValidator(double_validate)
         x_scale_input.returnPressed.connect(self.set_scale_x)
-        grid.addWidget(x_scale_input,3,1)
+        grid.addWidget(x_scale_input, 3, 1)
         y_scale_input = QLineEdit("100")
         y_scale_input.setValidator(double_validate)
         y_scale_input.returnPressed.connect(self.set_scale_y)
-        grid.addWidget(y_scale_input,3,2)
+        grid.addWidget(y_scale_input, 3, 2)
         z_scale_input = QLineEdit("100")
         z_scale_input.setValidator(double_validate)
         z_scale_input.returnPressed.connect(self.set_scale_z)
-        grid.addWidget(z_scale_input,3,3)
+        grid.addWidget(z_scale_input, 3, 3)
 
         x_demension_input = QLineEdit("0")
         x_demension_input.setValidator(double_validate)
-        grid.addWidget(x_demension_input,4,1)
+        grid.addWidget(x_demension_input, 4, 1)
         y_demension_input = QLineEdit("0")
         y_demension_input.setValidator(double_validate)
-        grid.addWidget(y_demension_input,4,2)
+        grid.addWidget(y_demension_input, 4, 2)
         z_demension_input = QLineEdit("0")
         z_demension_input.setValidator(double_validate)
-        grid.addWidget(z_demension_input,4,3)
+        grid.addWidget(z_demension_input, 4, 3)
 
         grid.addWidget(QLabel("mm"), 1, 4)
         grid.addWidget(QLabel("°"), 2, 4)
@@ -238,7 +279,7 @@ class ModelManipulation(QWidget):
         horizontalLayout.addStretch(1)
 
     def get_x(self):
-        #print(self.sender().text())
+        # print(self.sender().text())
         global provider
         provider.x = float(self.sender().text())
 
@@ -274,22 +315,102 @@ class ModelManipulation(QWidget):
         global provider
         provider.z_scale = float(self.sender().text())
 
+
+class ImageManipulation(QWidget):
+    def __init__(self, ptr_image_widget):
+        super().__init__()
+        self.imageWidget = ptr_image_widget
+        grid = QGridLayout()
+        horizontalLayout = QVBoxLayout()
+        grid.setSizeConstraint(QLayout.SetMinimumSize)
+        horizontalLayout.addLayout(grid)
+        self.setLayout(horizontalLayout)
+
+        self.name = QLabel("Name: tex.jpg")
+        horizontalLayout.addWidget(self.name)
+
+        xLabel = QLabel("X")
+        # xLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        xLabel.setAlignment(Qt.AlignVCenter)
+        grid.addWidget(xLabel, 0, 1)
+
+        grid.addWidget(QLabel("Y"), 0, 2)
+        grid.addWidget(QLabel("Position:"), 1, 0)
+        grid.addWidget(QLabel("Rotate:"), 2, 0)
+        grid.addWidget(QLabel("Scale"), 3, 0)
+
+        double_validate = QDoubleValidator()
+        x_input = QLineEdit("0")
+        x_input.setValidator(double_validate)
+        x_input.returnPressed.connect(self.get_x)
+        grid.addWidget(x_input, 1, 1)
+        y_input = QLineEdit("0")
+        y_input.setValidator(double_validate)
+        y_input.returnPressed.connect(self.get_y)
+        grid.addWidget(y_input, 1, 2)
+
+        rot_input = QLineEdit("0")
+        rot_input.setValidator(double_validate)
+        #rot_input.returnPressed.connect(self.rotate)
+        grid.addWidget(rot_input, 2, 1)
+
+        x_scale_input = QLineEdit("100")
+        x_scale_input.setValidator(double_validate)
+        x_scale_input.returnPressed.connect(self.set_scale_x)
+        grid.addWidget(x_scale_input, 3, 1)
+
+        grid.addWidget(QLabel("Opacity: "), 4, 0)
+        self.sl = QSlider(Qt.Horizontal)
+        self.sl.setMinimum(0)
+        self.sl.setMaximum(100)
+        self.sl.setValue(100)
+        self.sl.valueChanged.connect(self.valuechange)
+        grid.addWidget(self.sl, 4, 1)
+
+        # xLabel = QLabel("X")
+
+        xLabel.setAlignment(Qt.AlignVCenter)
+        horizontalLayout.addStretch(1)
+
+    def valuechange(self):
+        size = self.sl.value()
+        size = size / 100
+        self.imageWidget.item1.setOpacity(size)
+
+    def get_x(self):
+        # print(self.sender().text())
+        tmp = float(self.sender().text())
+        tmp = tmp*450/200
+        self.imageWidget.item1.setX(tmp)
+        # self.imageWidget.item1.scale(1, -1)
+
+    def get_y(self):
+        #self.imageWidget.item1.setTransform(QTransform.fromScale(1, -1))
+        tmp = float(self.sender().text())
+        tmp = tmp*450/200
+        self.imageWidget.item1.setY(tmp)
+
+    def set_scale_x(self):
+        tmp = int(self.sender().text())/100
+        self.imageWidget.item1.setScale(tmp)
+
+
 class MyTableWidget(QWidget):
-    def __init__(self):
+    def __init__(self, ptr_image_widget):
         super().__init__()
         self.setFixedWidth(350)
         self.layout = QVBoxLayout(self)
         self.tabs = QTabWidget()
         self.tab1 = ModelManipulation()
-        self.tab2 = QWidget()
+        self.tab2 = ImageManipulation(ptr_image_widget)
         self.tab3 = QWidget()
         self.tab4 = GcodeSettings()
 
-        self.layout.setContentsMargins(0,0,0,0)
-        self.tabs.addTab(self.tab1,"Model")
-        self.tabs.addTab(self.tab2,"Image")
-        self.tabs.addTab(self.tab3,"Engraving")
-        self.tabs.addTab(self.tab4,"G-code")
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.tabs.addTab(self.tab1, "Model")
+        self.tabs.addTab(self.tab2, "Image")
+        self.tabs.addTab(self.tab3, "Engraving")
+        self.tabs.addTab(self.tab4, "G-code")
 
         self.layout.addWidget(self.tabs)
         self.processBtn = QPushButton("Process")
@@ -307,27 +428,35 @@ class MyTableWidget(QWidget):
 
 ref_to_img_widget = None
 
+
 class Test(QObject):
     def __init__(self):
         super(Test, self).__init__()
 
-    @Slot(QImage)
+    @ Slot(QImage)
     def model(self, reply):
         print('from QML: %s' % (reply))
         print('wywolano')
+        reply.mirrored()
         image = QPixmap.fromImage(reply)
+
         global ref_to_img_widget
         ref_to_img_widget.addPixmap(image)
         ref_to_img_widget.update()
 
+
 pyobject = Test()
+
 
 class Viewer3d(QQuickWidget):
     def __init__(self):
         super().__init__()
         global provider
-        self.engine().rootContext().setContextProperty("_renderCaptureProvider", pyobject)
+        global windowProvider
+        self.engine().rootContext().setContextProperty(
+            "_renderCaptureProvider", pyobject)
         self.engine().rootContext().setContextProperty("r_manager", provider)
+        self.engine().rootContext().setContextProperty("window_manager", windowProvider)
         self.setSource(QUrl.fromLocalFile("main.qml"))
         self.setResizeMode(QQuickWidget.SizeRootObjectToView)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -342,19 +471,23 @@ class ImageWidget(QGraphicsView):
         self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        img = QImage(600,500, QImage.Format_ARGB32)
+        #self.scale(1,-1) #tuaj
+        img = QImage(500, 500, QImage.Format_ARGB32)
         img.fill(QColor("blue").rgba())
         pixmap01 = QPixmap.fromImage(img)
         self.scene = QGraphicsScene()
         global ref_to_img_widget
         ref_to_img_widget = self.scene
-        self.scene.addPixmap(pixmap01)
-        img = QImage(50,50, QImage.Format_ARGB32)
-        img.fill(QColor("red").rgba())
+        self.item = self.scene.addPixmap(pixmap01)
+
+        #img = QImage(50, 50, QImage.Format_ARGB32)
+        img = QImage("images/tex.jpg")
+        #img.fill(QColor("red").rgba())
         pixmap02 = QPixmap.fromImage(img)
         self.item1 = self.scene.addPixmap(pixmap02)
-        self.item1.setPos(300,300)
+        self.item1.setPos(0, 500-256)
         self.item1.setZValue(1)
+        self.item1.setOpacity(.5)
         self.setScene(self.scene)
 
     def wheelEvent(self, event):
@@ -364,22 +497,21 @@ class ImageWidget(QGraphicsView):
         else:
             factor = 0.8
             self._zoom -= 1
-        #if self._zoom > 0:
+        # if self._zoom > 0:
         self.scale(factor, factor)
-        #elif self._zoom == 0:
+        # elif self._zoom == 0:
         #    self.fitInView()
-        #else:
+        # else:
         #    self._zoom = 0
-
 
 
 class MainWidget(QWidget):
     def __init__(self):
         super().__init__()
         view = Viewer3d()
-        tab = MyTableWidget()
-
         image_viewer = ImageWidget()
+        tab = MyTableWidget(image_viewer)
+
         layout = QHBoxLayout()
         layout.addWidget(image_viewer)
         layout.addWidget(view)
@@ -391,38 +523,50 @@ class SettingsWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setAttribute(Qt.WA_DeleteOnClose)
+        settings = Settings()
         con = settings.printerSettings
         grid = QGridLayout()
         self.setLayout(grid)
         double_validator = QDoubleValidator()
         grid.addWidget(QLabel("Size:"), 0, 0)
         grid.addWidget(QLabel("x:"), 0, 2)
-        bedSizeX = QLineEdit(con['bed_size_x'])
-        bedSizeX.setValidator(double_validator)
-        #bedSizeX.returnPressed.connect(self.set_rot_x)
-        grid.addWidget(bedSizeX,0,3)
+        self.bedSizeX = QLineEdit(con['bed_size_x'])
+        self.bedSizeX.setValidator(double_validator)
+        # bedSizeX.returnPressed.connect(self.set_bed_x)
+        grid.addWidget(self.bedSizeX, 0, 3)
 
         grid.addWidget(QLabel("y:"), 1, 2)
-        bedSizeY = QLineEdit(con['bed_size_y'])
-        bedSizeY.setValidator(double_validator)
-        #bedSizeX.returnPressed.connect(self.set_rot_x)
-        grid.addWidget(bedSizeY, 1, 3)
+        self.bedSizeY = QLineEdit(con['bed_size_y'])
+        self.bedSizeY.setValidator(double_validator)
+        # bedSizeX.returnPressed.connect(self.set_rot_x)
+        grid.addWidget(self.bedSizeY, 1, 3)
 
         grid.addWidget(QLabel("Origin:"), 2, 0)
         grid.addWidget(QLabel("x:"), 2, 2)
-        originX = QLineEdit(con['origin_x'])
-        originX.setValidator(double_validator)
-        #bedSizeX.returnPressed.connect(self.set_rot_x)
-        grid.addWidget(originX, 2, 3)
+        self.originX = QLineEdit(con['origin_x'])
+        self.originX.setValidator(double_validator)
+        # bedSizeX.returnPressed.connect(self.set_rot_x)
+        grid.addWidget(self.originX, 2, 3)
 
         grid.addWidget(QLabel("y:"), 3, 2)
-        originY = QLineEdit(con['origin_y'])
-        originY.setValidator(double_validator)
-        #bedSizeX.returnPressed.connect(self.set_rot_x)
-        grid.addWidget(originY, 3, 3)
+        self.originY = QLineEdit(con['origin_y'])
+        self.originY.setValidator(double_validator)
+        # bedSizeX.returnPressed.connect(self.set_rot_x)
+        grid.addWidget(self.originY, 3, 3)
 
+        okButton = QPushButton('save')
+        okButton.clicked.connect(self.set_printer_settings)
+        grid.addWidget(okButton, 4, 3)
 
-
+    def set_printer_settings(self):
+        settings = Settings()
+        con = settings.printerSettings
+        con['bed_size_x'] = self.bedSizeX.text()
+        con['bed_size_y'] = self.bedSizeY.text()
+        con['origin_x'] = self.originX.text()
+        con['origin_y'] = self.originY.text()
+        global windowProvider
+        windowProvider.loadSettings()
 
 
 class MainWindow(QMainWindow):
@@ -457,21 +601,22 @@ class MainWindow(QMainWindow):
     def initialize_tool_bar(self):
         tool_menu = QToolBar()
         self.addToolBar(tool_menu)
-        action = QAction(QIcon("icons/move.png"),"Move",self)
+        action = QAction(QIcon("icons/move.png"), "Move", self)
         action.setIcon(QIcon("icons/move.png"))
         tool_menu.addAction(action)
 
-
     def getfile(self):
-       fname, tmp = QFileDialog.getOpenFileName(self, 'Open file',
-          'c:\\',"Model files (*.obj *.stl *.ply)")
-       print(fname)
-       global provider
-       provider.modelChange = "file:///"+fname
-       provider.modelName = fname
+        fname, tmp = QFileDialog.getOpenFileName(self, 'Open file',
+                                                 'c:\\', "Model files (*.obj *.stl *.ply)")
+        print(fname)
+        global provider
+        provider.modelChange = "file:///"+fname
+        provider.modelName = fname
 
     def openSettingsWindow(self):
+        self.sw = SettingsWindow()
         self.sw.show()
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

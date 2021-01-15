@@ -6,7 +6,7 @@ import QtQuick.Controls 2.12
 
 Item {
     id: mainview
-    width: 600
+    width: 500
     height: 500
     visible: true
     //anchors.fill: parent
@@ -21,7 +21,9 @@ Item {
     Scene3D {
         id: scene3d
         multisample: true
-        anchors.fill: parent
+        //anchors.fill: parent
+        width: 500
+        height: 500
         //cameraAspectRatioMode: Scene3D.AutomaticAspectRatio
         aspects: ["render", "input", "logic"]
         Scene {

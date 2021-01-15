@@ -55,11 +55,9 @@ Entity {
 
         Camera {
             id: camera
-            projectionType: CameraLens.OrthographicProjection
-            left: -set_parent.width/4
-            right: set_parent.width/4
-            bottom: -set_parent.height/4
-            top: set_parent.height/4
+            projectionType: CameraLens.PerspectiveProjection
+            fieldOfView: 45
+            aspectRatio: 16 / 9
             nearPlane: 0.1
             farPlane: 1000.0
             position: Qt.vector3d(100.0, -100.0, 300.0)
@@ -73,10 +71,10 @@ Entity {
 
             nearPlane: 0.1
             farPlane: 1000.0
-            left: -set_parent.width/4
-            right: set_parent.width/4
-            bottom: -set_parent.height/4
-            top: set_parent.height/4
+            left: -200/2
+            right: 200/2
+            bottom: -200/2
+            top: 200/2
             position: Qt.vector3d(100.0, 100.0, 100.0)
             //upVector: Qt.vector3d(0.0, 1.0, 0.0)
             viewCenter: Qt.vector3d(100.0, 100.0, 0.0)
@@ -198,8 +196,8 @@ Entity {
 
         GridEntity {
                 id: raydisplay
-                sizeX: 235
-                sizeY: 235
+                sizeX: 200
+                sizeY: 200
             }
 
 } // rootNode
