@@ -18,12 +18,13 @@ Entity {
         var spacing = 10
         var ammountOfLinesX = size_x/spacing + 1;
         var ammountOfLinesY = size_y/spacing + 1;
-        //var v1 = o.plus(d.times(l));
-        //ver_count = size_x * 2 + size_y * 2;
-        var vertexArray = new Float32Array((3 * ammountOfLinesX * 2) + (3 * ammountOfLinesY * 2));
+
+        var vertexArray = new Float32Array((3 * ammountOfLinesX * 2) + (3 * ammountOfLinesY * 2)+6);
+        console.log(vertexArray.length)
         ver_count = vertexArray.length
         var j = 0;
-        for (var i = 0; i < ammountOfLinesX; i++){
+
+        for (var i = 0; i < ammountOfLinesX -1 ; i++){
 
             vertexArray[j++] = spacing*i;
             vertexArray[j++] = 0;
@@ -32,15 +33,29 @@ Entity {
             vertexArray[j++] = size_y;
             vertexArray[j++] = 0;
         }
-        for (i = 0; i < ammountOfLinesY; i++){
-            vertexArray[j++] = 0;
-            vertexArray[j++] = spacing*i;
-            vertexArray[j++] = 0;
-                        vertexArray[j++] = size_x;
-            vertexArray[j++] = spacing*i;
 
+        vertexArray[j++] = size_x;
+        vertexArray[j++] = 0;
+        vertexArray[j++] = 0;
+        vertexArray[j++] = size_x;
+        vertexArray[j++] = size_y;
+        vertexArray[j++] = 0;
+
+        for (i = 0; i < ammountOfLinesY - 1; i++){
+            vertexArray[j++] = 0;
+            vertexArray[j++] = spacing*i;
+            vertexArray[j++] = 0;
+            vertexArray[j++] = size_x;
+            vertexArray[j++] = spacing*i;
             vertexArray[j++] = 0;
         }
+        vertexArray[j++] = 0;
+        vertexArray[j++] = size_y;
+        vertexArray[j++] = 0;
+        vertexArray[j++] = size_x;
+        vertexArray[j++] = size_y;
+        vertexArray[j++] = 0;
+
 
         //console.log(vertexArray);
         return vertexArray;

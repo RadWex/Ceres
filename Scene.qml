@@ -198,8 +198,8 @@ Entity {
 
         GridEntity {
                 id: raydisplay
-                sizeX: 300
-                sizeY: 200
+                sizeX: 235
+                sizeY: 235
             }
 
 } // rootNode
