@@ -7,7 +7,11 @@ from PySide2.QtQuickWidgets import QQuickWidget
 from PySide2.QtCore import QUrl, Property, QObject, Slot, QTimer, Signal, Qt
 from PySide2.QtWidgets import *
 from Settings import Settings
+from PIL.ImageQt import ImageQt
+from PIL import Image, ImageEnhance
 
+im = Image.open("images/tex.jpg")
+im=im.convert('L')
 
 class MeshManager(QObject):
     modelChanged = Signal(str)
@@ -367,15 +371,51 @@ class ImageManipulation(QWidget):
         self.sl.valueChanged.connect(self.valuechange)
         grid.addWidget(self.sl, 4, 1)
 
+        grid.addWidget(QLabel("Brightness: "), 5, 0)
+        self.sl2 = QSlider(Qt.Horizontal)
+        self.sl2.setMinimum(0)
+        self.sl2.setMaximum(40)
+        self.sl2.setValue(10)
+        self.sl2.valueChanged.connect(self.valuechange2)
+        grid.addWidget(self.sl2, 5, 1)
+
+        grid.addWidget(QLabel("Contrast: "), 6, 0)
+        self.sl3 = QSlider(Qt.Horizontal)
+        self.sl3.setMinimum(0)
+        self.sl3.setMaximum(40)
+        self.sl3.setValue(10)
+        self.sl3.valueChanged.connect(self.valuechange3)
+        grid.addWidget(self.sl3, 6, 1)
         # xLabel = QLabel("X")
 
         xLabel.setAlignment(Qt.AlignVCenter)
         horizontalLayout.addStretch(1)
 
+
     def valuechange(self):
         size = self.sl.value()
         size = size / 100
         self.imageWidget.item1.setOpacity(size)
+
+    def valuechange2(self):
+        size = self.sl2.value()
+        size = size / 10
+        global im
+        enhancer = ImageEnhance.Brightness(im)
+        enhanced_im = enhancer.enhance(size)
+        img = ImageQt(enhanced_im)
+        pixmap02 = QPixmap.fromImage(img)
+        self.imageWidget.item1.setPixmap(pixmap02)
+
+    def valuechange3(self):
+        size = self.sl3.value()
+        size = size / 10
+        global im
+        enhancer = ImageEnhance.Contrast(im)
+        enhanced_im = enhancer.enhance(size)
+        img = ImageQt(enhanced_im)
+        pixmap02 = QPixmap.fromImage(img)
+        self.imageWidget.item1.setPixmap(pixmap02)
 
     def get_x(self):
         # print(self.sender().text())
@@ -388,7 +428,7 @@ class ImageManipulation(QWidget):
         #self.imageWidget.item1.setTransform(QTransform.fromScale(1, -1))
         tmp = float(self.sender().text())
         tmp = tmp*450/200
-        self.imageWidget.item1.setY(tmp)
+        self.imageWidget.item1.setY(-tmp-256)
 
     def set_scale_x(self):
         tmp = int(self.sender().text())/100
@@ -441,7 +481,8 @@ class Test(QObject):
         image = QPixmap.fromImage(reply)
 
         global ref_to_img_widget
-        ref_to_img_widget.addPixmap(image)
+        img = ref_to_img_widget.addPixmap(image)
+        img.setPos(0, -500)
         ref_to_img_widget.update()
 
 
@@ -479,15 +520,19 @@ class ImageWidget(QGraphicsView):
         global ref_to_img_widget
         ref_to_img_widget = self.scene
         self.item = self.scene.addPixmap(pixmap01)
-
+        self.item.setPos(0, -500)
         #img = QImage(50, 50, QImage.Format_ARGB32)
-        img = QImage("images/tex.jpg")
+        global im
+        qim = ImageQt(im)
+        self.pixmap = QPixmap.fromImage(qim)
+        #img = QImage("images/tex.jpg")
         #img.fill(QColor("red").rgba())
-        pixmap02 = QPixmap.fromImage(img)
-        self.item1 = self.scene.addPixmap(pixmap02)
-        self.item1.setPos(0, 500-256)
+        #pixmap02 = QPixmap.fromImage(img)
+        self.item1 = self.scene.addPixmap(self.pixmap)
+        self.item1.setPos(0, -256)
         self.item1.setZValue(1)
-        self.item1.setOpacity(.5)
+        self.item1.setOpacity(1)
+        self.scene.setSceneRect(0, -500, 500, 500)
         self.setScene(self.scene)
 
     def wheelEvent(self, event):
@@ -595,8 +640,8 @@ class MainWindow(QMainWindow):
         settingsOpenAction = QAction("Printer settings", self)
         settingsOpenAction.triggered.connect(self.openSettingsWindow)
         edit_menu.addAction(settingsOpenAction)
-        file_menu.addAction(exitAction)
         file_menu.addAction(fileOpenAction)
+        file_menu.addAction(exitAction)
 
     def initialize_tool_bar(self):
         tool_menu = QToolBar()
