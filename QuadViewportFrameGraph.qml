@@ -21,13 +21,12 @@ RenderSettings {
                 id: topLeftViewport
                 CameraSelector{
                     id: cameraSelectorTopLeftViewport
+                    RenderCapture {
+                        id:renderCapture
+                    }
                 }
             }
         }
-        RenderCapture {
-            id:renderCapture
-        }
-
 
         ClearBuffers {
             buffers: ClearBuffers.ColorDepthBuffer

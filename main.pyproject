@@ -8,8 +8,9 @@
     "LineMaterial.qml",
     "shaders\es2\simpleColor.frag",
     "shaders\es2\simpleColor.vert",
-    "main.qrc",
     "GridEntity.qml",
-    "settings.py"
+    "settings.py",
+    "AxisEntity.qml",
+    "LightEntity.qml"
     ]
 }

@@ -6,8 +6,8 @@ import Qt3D.Extras 2.0
 Entity {
     id: root
 
-    property int sizeX
-    property int sizeY
+    property int sizeX : 200
+    property int sizeY : 200
     //property int length: 1
 
     components: [ mesh, material ]
@@ -30,31 +30,31 @@ Entity {
             vertexArray[j++] = 0;
             vertexArray[j++] = 0;
             vertexArray[j++] = spacing*i;
-            vertexArray[j++] = size_y;
             vertexArray[j++] = 0;
+            vertexArray[j++] = -size_y;
         }
 
         vertexArray[j++] = size_x;
         vertexArray[j++] = 0;
         vertexArray[j++] = 0;
         vertexArray[j++] = size_x;
-        vertexArray[j++] = size_y;
         vertexArray[j++] = 0;
+        vertexArray[j++] = -size_y;
 
         for (i = 0; i < ammountOfLinesY - 1; i++){
             vertexArray[j++] = 0;
-            vertexArray[j++] = spacing*i;
             vertexArray[j++] = 0;
+            vertexArray[j++] = -spacing*i;
             vertexArray[j++] = size_x;
-            vertexArray[j++] = spacing*i;
             vertexArray[j++] = 0;
+            vertexArray[j++] = -spacing*i;
         }
         vertexArray[j++] = 0;
-        vertexArray[j++] = size_y;
         vertexArray[j++] = 0;
+        vertexArray[j++] = -size_y;
         vertexArray[j++] = size_x;
-        vertexArray[j++] = size_y;
         vertexArray[j++] = 0;
+        vertexArray[j++] = -size_y;
 
 
         //console.log(vertexArray);

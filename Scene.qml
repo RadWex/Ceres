@@ -12,7 +12,6 @@ Entity {
     function doRenderCapture()
     {
         reply = scene.requestRenderCapture()
-        //console.log(reply)
         reply.completed.connect(onRenderCaptureComplete)
     }
 
@@ -44,10 +43,9 @@ Entity {
 
     OrbitCameraController {
             lookSpeed: 1000
-            linearSpeed: 1000
+            linearSpeed: 1500
             camera: camera
         }
-
 
     Entity {
         id: cameraSet
@@ -56,13 +54,13 @@ Entity {
         Camera {
             id: camera
             projectionType: CameraLens.PerspectiveProjection
-            fieldOfView: 45
+            fieldOfView: 30
             aspectRatio: 16 / 9
             nearPlane: 0.1
             farPlane: 1000.0
-            position: Qt.vector3d(100.0, -100.0, 300.0)
+            position: Qt.vector3d(100.0, 300.0, 300.0)
             //upVector: Qt.vector3d(-100.0, 0.0, -100.0)
-            viewCenter: Qt.vector3d(100.0, 100.0, 0.0)
+            viewCenter: Qt.vector3d(100.0, 0.0, -100.0)
         }
 
         Camera {
@@ -71,16 +69,16 @@ Entity {
 
             nearPlane: 0.1
             farPlane: 1000.0
-            left: -200/2
-            right: 200/2
-            bottom: -200/2
-            top: 200/2
-            position: Qt.vector3d(100.0, 100.0, 100.0)
+            left: -200/1.9
+            right: 200/1.9
+            bottom: -200/1.9
+            top: 200/1.9
+            position: Qt.vector3d(100.0, 100.0, -100.0)
             //upVector: Qt.vector3d(0.0, 1.0, 0.0)
-            viewCenter: Qt.vector3d(100.0, 100.0, 0.0)
+            viewCenter: Qt.vector3d(100.0, 0.0, -100.0)
         }
     }
-
+    /*
     function printHits(desc, hits) {
             console.log(desc, hits.length)
             for (var i=0; i<hits.length; i++) {
@@ -98,10 +96,6 @@ Entity {
             onHitsChanged: printHits("Model hits", hits)
         }
 
-    Entity {
-        id: sceneRoot
-
-/*
         ScreenRayCaster {
                 id: screenRayCaster
 
@@ -112,92 +106,53 @@ Entity {
                 sourceDevice:  MouseDevice {}
                 onReleased: { screenRayCaster.trigger(Qt.point(mouse.x, mouse.y))
                 console.log("dzoala")}
-            }*/
+    */
+    Entity {
+        id: sceneRoot
 
         //Component.onCompleted: {doRenderCapture()}//do poprawy
         PhongMaterial {
-                    id: material
-                    ambient: "gray"
-                    diffuse: "gray"
-                    specular: "white"
-                }
-
-        Mesh {
-            id: circleMesh
-            source: r_manager.modelChange
-            onSourceChanged: doRenderCapture()
-        }
-
-        Transform{
-            id: circleTransform
-            translation.x: r_manager.x
-            translation.y: r_manager.y
-            translation.z: r_manager.z
-            rotationX: r_manager.x_rot
-            rotationY: r_manager.y_rot
-            rotationZ: r_manager.z_rot
-            scale3D: Qt.vector3d(r_manager.x_scale,r_manager.y_scale,r_manager.z_scale)
-            //PropertyChanges {
-                //target: qmlNote
-              //  onNoteChanged: doRenderCapture
-            //}
-            onScale3DChanged: doRenderCapture()
-            onRotationXChanged: doRenderCapture()
-            onTranslationChanged: doRenderCapture()
-
+            id: material
+            ambient: "gray"
+            diffuse: "gray"
+            specular: "black"
         }
 
         Entity {
-            id: circleEntity
-            components: [circleMesh, material, circleTransform/*, screenRayCaster, mouseHandler*/]
-        }
+            Mesh {
+                id: modelMesh
+                source: r_manager.modelChange
+                onSourceChanged: doRenderCapture()
+            }
+            Transform {
+                id: modelTransform
+                translation.x: r_manager.x
+                translation.y: r_manager.z
+                translation.z: -r_manager.y
+                rotationX: r_manager.x_rot-90
+                rotationY: r_manager.z_rot
+                rotationZ: -r_manager.y_rot
+                scale3D: Qt.vector3d(r_manager.x_scale,r_manager.y_scale,r_manager.z_scale)
+                //PropertyChanges {
+                    //target: qmlNote
+                  //  onNoteChanged: doRenderCapture
+                //}
+                onScale3DChanged: doRenderCapture()
+                onRotationXChanged: doRenderCapture()
+                onTranslationChanged: doRenderCapture()
 
+            }
+            components: [modelMesh, material, modelTransform/*, screenRayCaster, mouseHandler*/]
+        }
+        GridEntity {
+            id: raydisplay
+            sizeX: 200
+            sizeY: 200
+        }
+        AxisEntity {
+            length: 20
+        }
+        LightEntity{}
 
     } // sceneRoot
-    Entity{
-        components: [
-        PointLight{
-                color: "red"
-                intensity: 10
-                                constantAttenuation: 1.0
-                                linearAttenuation: 0.0
-                                quadraticAttenuation: 0.0025
-        }, Transform {
-                translation: Qt.vector3d(0.0, 50.0, 30.0)
-            }
-        ]
-    }
-    Entity{
-        components: [
-        PointLight{
-                color: "green"
-                intensity: 10
-                                constantAttenuation: 1.0
-                                linearAttenuation: 0.0
-                                quadraticAttenuation: 0.0025
-        }, Transform {
-                translation: Qt.vector3d(0.0, -50.0, 50.0)
-            }
-        ]
-    }
-    Entity{
-        components: [
-        PointLight{
-                color: "green"
-                intensity: 10
-                                constantAttenuation: 1.0
-                                linearAttenuation: 0.0
-                                quadraticAttenuation: 0.0025
-        }, Transform {
-                translation: Qt.vector3d(0.0, -50.0, -50.0)
-            }
-        ]
-    }
-
-        GridEntity {
-                id: raydisplay
-                sizeX: 200
-                sizeY: 200
-            }
-
-} // rootNode
+}

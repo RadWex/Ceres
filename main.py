@@ -37,7 +37,7 @@ class MeshManager(QObject):
         self._x_scale = 1
         self._y_scale = 1
         self._z_scale = 1
-        self._modelChange = "meshes/circle.stl"
+        self._modelChange = "meshes/xyz.stl"
 
     @Property(float, notify=xChanged)
     def x(self):
@@ -531,7 +531,7 @@ class ImageWidget(QGraphicsView):
         self.item1 = self.scene.addPixmap(self.pixmap)
         self.item1.setPos(0, -256)
         self.item1.setZValue(1)
-        self.item1.setOpacity(1)
+        self.item1.setOpacity(.5)
         self.scene.setSceneRect(0, -500, 500, 500)
         self.setScene(self.scene)
 
