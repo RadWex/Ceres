@@ -1,6 +1,7 @@
 # This Python file uses the following encoding: utf-8
 import sys
 
+from PySide2.Qt3DRender import (Qt3DRender)
 from PySide2.QtWidgets import QMainWindow, QApplication, QGridLayout
 from PySide2.QtGui import *
 from PySide2.QtQuickWidgets import QQuickWidget
@@ -9,6 +10,7 @@ from PySide2.QtWidgets import *
 from Settings import Settings
 from PIL.ImageQt import ImageQt
 from PIL import Image, ImageEnhance
+import numpy as np
 
 im = Image.open("images/tex.jpg")
 im=im.convert('L')
@@ -37,7 +39,7 @@ class MeshManager(QObject):
         self._x_scale = 1
         self._y_scale = 1
         self._z_scale = 1
-        self._modelChange = "meshes/xyz.stl"
+        self._modelChange = "meshes/circle.stl"
 
     @Property(float, notify=xChanged)
     def x(self):
@@ -207,10 +209,14 @@ class ModelManipulation(QWidget):
     def __init__(self):
         super().__init__()
         grid = QGridLayout()
+        groupbox_name = QGroupBox(self)
         horizontalLayout = QVBoxLayout()
         grid.setSizeConstraint(QLayout.SetMinimumSize)
+        horizontalLayout.addWidget(groupbox_name)
+        horizontalLayout_for_groupbox = QVBoxLayout()
+        groupbox_name.setLayout(horizontalLayout_for_groupbox)
         self.name = QLabel("Name:")
-        horizontalLayout.addWidget(self.name)
+        horizontalLayout_for_groupbox.addWidget(self.name)
         horizontalLayout.addLayout(grid)
         self.setLayout(horizontalLayout)
         xLabel = QLabel("X")
@@ -473,10 +479,36 @@ class Test(QObject):
     def __init__(self):
         super(Test, self).__init__()
 
+    @ Slot(Qt3DRender.QGeometry)
+    def dawaj_model(self, reply):
+        vertexPosition = None
+        atributes = reply.attributes()
+        for i in atributes:
+            if i.name() == 'vertexPosition':
+                vertexPosition = i
+
+        vertices_count = vertexPosition.count()
+        tmp = np.frombuffer(vertexPosition.buffer().data(), dtype=np.float32)
+        arr = np.empty((0, 3), dtype=np.float32)
+        iterator = 1
+        for i,j,k in zip(tmp[0::3], tmp[1::3], tmp[2::3]):
+            if(iterator%2):
+                arr = np.append(arr, np.array([[i,j,k]], dtype=np.float32), axis=0)
+            iterator += 1
+            #print("%.2f %.2f %.2f" % (i,j,k))
+
+        print(arr)
+        max = arr.max(axis=0)
+        min = arr.min(axis=0)
+        print("max = ", max)
+        print("min = ", min)
+        print("dimensions = ", max-min)
+        print("count = ", vertices_count/3)
+
     @ Slot(QImage)
     def model(self, reply):
-        print('from QML: %s' % (reply))
-        print('wywolano')
+        #print('from QML: %s' % (reply))
+        #print('wywolano')
         reply.mirrored()
         image = QPixmap.fromImage(reply)
 
@@ -513,15 +545,9 @@ class ImageWidget(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         #self.scale(1,-1) #tuaj
-        img = QImage(500, 500, QImage.Format_ARGB32)
-        img.fill(QColor("blue").rgba())
-        pixmap01 = QPixmap.fromImage(img)
         self.scene = QGraphicsScene()
         global ref_to_img_widget
         ref_to_img_widget = self.scene
-        self.item = self.scene.addPixmap(pixmap01)
-        self.item.setPos(0, -500)
-        #img = QImage(50, 50, QImage.Format_ARGB32)
         global im
         qim = ImageQt(im)
         self.pixmap = QPixmap.fromImage(qim)
@@ -620,7 +646,7 @@ class MainWindow(QMainWindow):
         mainWidget = MainWidget()
         self.setCentralWidget(mainWidget)
         self.initialize_menu_bar()
-        self.initialize_tool_bar()
+        #self.initialize_tool_bar()
         self.setWindowTitle("Ceres")
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
@@ -667,7 +693,5 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     mainWindow = MainWindow()
     mainWindow.show()
-    provider.x = 10
-    provider.x = 0
 
     sys.exit(app.exec_())

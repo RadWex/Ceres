@@ -103,7 +103,6 @@ Entity{
             translation.x: 0
             translation.y: root.length/2
             translation.z: 0
-            //rotationX: -90
         }
         components: [cylinderZ, materialZ, cylinderTransformZ]
     }

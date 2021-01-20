@@ -10,7 +10,7 @@ Item {
     height: 500
     visible: true
     //anchors.fill: parent
-
+    property bool move : false
     //![1]
     Scene3D {
         id: scene3d
@@ -23,6 +23,7 @@ Item {
         Scene {
             set_parent: scene3d
             id: scene
+            move: mainview.move
         }
     }
 
@@ -41,7 +42,13 @@ Item {
             anchors.top: parent.top
             display: AbstractButton.IconOnly
             anchors.bottom: parent.bottom
-                    }
+            onClicked: {
+                if(mainview.move)
+                    mainview.move = false
+                else
+                    mainview.move = true
+            }
+        }
 
         layer.enabled: true
     }

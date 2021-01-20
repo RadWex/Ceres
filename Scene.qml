@@ -7,6 +7,7 @@ import Qt3D.Extras 2.15
 
 Entity {
     id: rootNode
+    property bool move: true
     property var set_parent
     property var reply
     function doRenderCapture()
@@ -107,6 +108,12 @@ Entity {
                 onReleased: { screenRayCaster.trigger(Qt.point(mouse.x, mouse.y))
                 console.log("dzoala")}
     */
+
+
+    //Buffer{
+   //     data:  geometryLoaded(modelMesh)
+    //}
+
     Entity {
         id: sceneRoot
 
@@ -123,7 +130,15 @@ Entity {
                 id: modelMesh
                 source: r_manager.modelChange
                 onSourceChanged: doRenderCapture()
+                onStatusChanged: {
+                    doRenderCapture()
+                    if(modelMesh.geometry == null)
+                        return
+                    //console.log(modelMesh.geometry)
+                    _renderCaptureProvider.dawaj_model(modelMesh.geometry)
+                }
             }
+
             Transform {
                 id: modelTransform
                 translation.x: r_manager.x
@@ -144,6 +159,41 @@ Entity {
             }
             components: [modelMesh, material, modelTransform/*, screenRayCaster, mouseHandler*/]
         }
+
+        Entity {
+            PhongMaterial {
+                id: mat
+                diffuse: "red"
+            }
+            CylinderMesh {
+                id: mod
+                length: 30
+                radius: 30
+                slices: 3
+
+            }
+            Transform {
+                id: tran
+                translation.x: 100
+                translation.y: 0
+                translation.z: -100
+            }
+            components: move ? [mod, mat, tran] : []
+            /*Component.onCompleted: {
+                mod.geometry.positionAttribute.buffer.setSyncData(true)
+                var vertexArray = new Float32Array(100);
+                //console.log(mod.geometry.positionAttribute.byteStride)
+                mod.geometry.positionAttribute.buffer.setUsage(Buffer.StreamRead)
+                mod.geometry.positionAttribute.buffer.setAccessType(Buffer.Read)
+                if(mod.geometry.positionAttribute.buffer.type == Buffer.VertexBuffer)
+                    var triCount = mod.geometry.positionAttribute.byteStride
+                    console.log(triCount)
+
+
+                console.log(mod.geometry.positionAttribute.buffer.data().detach())
+            }*/
+        }
+
         GridEntity {
             id: raydisplay
             sizeX: 200
