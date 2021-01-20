@@ -11,6 +11,7 @@
     "GridEntity.qml",
     "settings.py",
     "AxisEntity.qml",
-    "LightEntity.qml"
+    "LightEntity.qml",
+    "controller.py"
     ]
 }
