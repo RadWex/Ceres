@@ -34,8 +34,8 @@ Material {
         //! [2]
         ShaderProgram {
             id: gl3Shader
-            vertexShaderCode: loadSource(Qt.resolvedUrl("shaders/gl3/simpleColor.vert"))
-            fragmentShaderCode: loadSource(Qt.resolvedUrl("shaders/gl3/simpleColor.frag"))
+            vertexShaderCode: loadSource(Qt.resolvedUrl("../shaders/simpleColor.vert"))
+            fragmentShaderCode: loadSource(Qt.resolvedUrl("../shaders/simpleColor.frag"))
         }
 
         //! [2]

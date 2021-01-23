@@ -38,7 +38,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottomMargin: 0
         Button{
-            icon.source: "icons/move.png"
+            icon.source: "../icons/move.png"
             anchors.top: parent.top
             display: AbstractButton.IconOnly
             anchors.bottom: parent.bottom

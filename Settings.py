@@ -24,6 +24,11 @@ class Settings(metaclass=SettingsMeta):
         "origin_x": '0',
         "origin_y": '0'
     }
+    laserSettings = {
+        "w": '0',
+        "h": '40',
+        "d": '0'
+    }
     gcode = {
         "start": """G28 ; home all axes\nG1 Z5 F1500 ; lift nozzle""",
         "end": """G28 X0  ; home X axis\nM84 ; disable motors"""

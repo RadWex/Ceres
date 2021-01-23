@@ -5,6 +5,7 @@ from PySide2.QtQuickWidgets import QQuickWidget
 from PySide2.QtWidgets import QSizePolicy
 from PySide2.Qt3DRender import (Qt3DRender)
 from Settings import Settings
+from Controller import Controller
 
 
 class MeshManager(QObject):
@@ -31,14 +32,27 @@ class MeshManager(QObject):
         self._x_scale = 1
         self._y_scale = 1
         self._z_scale = 1
-        self._modelChange = "meshes/circle.stl"
+        self._modelChange = "../meshes/circle.stl"
+        contr = Controller()
+        contr.addRecive("3d/model/path", self.set_modelChange)
+        contr.addRecive("3d/model/location/x", self.set_x)
+        contr.addRecive("3d/model/location/y", self.set_y)
+        contr.addRecive("3d/model/location/z", self.set_z)
+        contr.addRecive("3d/model/rotation/x", self.set_x_rot)
+        contr.addRecive("3d/model/rotation/y", self.set_y_rot)
+        contr.addRecive("3d/model/rotation/z", self.set_z_rot)
+        contr.addRecive("3d/model/scale/x", self.set_x_scale)
+        contr.addRecive("3d/model/scale/y", self.set_y_scale)
+        contr.addRecive("3d/model/scale/z", self.set_z_scale)
+        # contr.addRecive("3d/model/dimension/x", self.set_x_dimen)
+        # contr.addRecive("3d/model/dimension/y", self.set_y_dimen)
+        # contr.addRecive("3d/model/dimension/z", self.set_z_dimen)
 
     @Property(float, notify=xChanged)
     def x(self):
         return self._x
 
-    @x.setter
-    def x(self, new_w):
+    def set_x(self, new_w):
         if self._x != new_w:
             self._x = new_w
             self.xChanged.emit(new_w)
@@ -47,8 +61,7 @@ class MeshManager(QObject):
     def y(self):
         return self._y
 
-    @y.setter
-    def y(self, new_y):
+    def set_y(self, new_y):
         if self._y != new_y:
             self._y = new_y
             self.yChanged.emit(new_y)
@@ -57,18 +70,17 @@ class MeshManager(QObject):
     def z(self):
         return self._z
 
-    @z.setter
-    def z(self, new_z):
+    def set_z(self, new_z):
         if self._z != new_z:
             self._z = new_z
             self.zChanged.emit(new_z)
 
+    # rotation
     @Property(float, notify=x_rot_Changed)
     def x_rot(self):
         return self._x_rot
 
-    @x_rot.setter
-    def x_rot(self, angle):
+    def set_x_rot(self, angle):
         if self._x_rot != angle:
             self._x_rot = angle
             self.x_rot_Changed.emit(angle)
@@ -77,8 +89,7 @@ class MeshManager(QObject):
     def y_rot(self):
         return self._y_rot
 
-    @y_rot.setter
-    def y_rot(self, angle):
+    def set_y_rot(self, angle):
         if self._y_rot != angle:
             self._y_rot = angle
             self.y_rot_Changed.emit(angle)
@@ -87,18 +98,17 @@ class MeshManager(QObject):
     def z_rot(self):
         return self._z_rot
 
-    @z_rot.setter
-    def z_rot(self, angle):
+    def set_z_rot(self, angle):
         if self._z_rot != angle:
             self._z_rot = angle
             self.z_rot_Changed.emit(angle)
 
+    # scale
     @Property(float, notify=x_scale_Changed)
     def x_scale(self):
         return self._x_scale
 
-    @x_scale.setter
-    def x_scale(self, angle):
+    def set_x_scale(self, angle):
         angle = angle/100.0
         if self._x_scale != angle:
             self._x_scale = angle
@@ -108,8 +118,7 @@ class MeshManager(QObject):
     def y_scale(self):
         return self._y_scale
 
-    @y_scale.setter
-    def y_scale(self, angle):
+    def set_y_scale(self, angle):
         angle = angle/100.0
         if self._y_scale != angle:
             self._y_scale = angle
@@ -119,69 +128,65 @@ class MeshManager(QObject):
     def z_scale(self):
         return self._z_scale
 
-    @z_scale.setter
-    def z_scale(self, angle):
+    def set_z_scale(self, angle):
         angle = angle/100.0
         if self._z_scale != angle:
             self._z_scale = angle
             self.z_scale_Changed.emit(angle)
 
+    # model
     @Property(str, notify=modelChanged)
     def modelChange(self):
         return self._modelChange
 
-    @modelChange.setter
-    def modelChange(self, path):
+    def set_modelChange(self, path):
         if self._modelChange != path:
             self._modelChange = path
             self.modelChanged.emit(path)
 
 
-provider = MeshManager()
-
-
-class Window3dManager(QObject):
-    xBedChanged = Signal(int)
-    yBedChanged = Signal(int)
+class BedManager(QObject):
+    xBedChanged = Signal(float)
+    yBedChanged = Signal(float)
 
     def __init__(self, parent=None):
-        super(Window3dManager, self).__init__(parent)
+        super(BedManager, self).__init__(parent)
         self._xBed = 235
         self._yBed = 235
         self.loadSettings()
+        contr = Controller()
+        contr.addRecive("3d/bedSize", self.set_bed)
 
     def loadSettings(self):
         settings = Settings()
-        self._xBed = settings.printerSettings['bed_size_x']
-        self._yBed = settings.printerSettings['bed_size_x']
+        self._xBed = float(settings.printerSettings['bed_size_x'])
+        self._yBed = float(settings.printerSettings['bed_size_x'])
 
-    @Property(int, notify=xBedChanged)
+    @Property(float, notify=xBedChanged)
     def xBed(self):
         return self._xBed
 
-    @xBed.setter
-    def xBed(self, new_x):
-        if self._xBed != new_x:
-            self._xBed = new_x
-            self.xBedChanged.emit(new_x)
-
-    @Property(int, notify=yBedChanged)
+    @Property(float, notify=yBedChanged)
     def yBed(self):
         return self._yBed
 
-    @yBed.setter
-    def yBed(self, new_y):
-        if self._yBed != new_y:
-            self._yBed = new_y
-            self.yBedChanged.emit(new_y)
+    def set_bed(self, new_x, new_y):
+        print("New bed", new_x, new_y)
+        self._xBed = new_x
+        self.xBedChanged.emit(new_x)
+        self._yBed = new_y
+        self.yBedChanged.emit(new_y)
 
 
-windowProvider = Window3dManager()
+class MeshUtils(QObject):
+    trisCountChangeSig = Signal(int)
+    dimensionChangeSig = Signal(float, float, float)
 
-
-class Test(QObject):
     def __init__(self):
-        super(Test, self).__init__()
+        super(MeshUtils, self).__init__()
+        contr = Controller()
+        contr.addSend("3d/model/tris", self.trisCountChangeSig)
+        contr.addSend("3d/model/dimension", self.dimensionChangeSig)
 
     @ Slot(Qt3DRender.QGeometry)
     def dawaj_model(self, reply):
@@ -200,39 +205,40 @@ class Test(QObject):
                 arr = np.append(arr, np.array(
                     [[i, j, k]], dtype=np.float32), axis=0)
             iterator += 1
-            #print("%.2f %.2f %.2f" % (i,j,k))
+            # print("%.2f %.2f %.2f" % (i,j,k))
 
-        print(arr)
-        max = arr.max(axis=0)
-        min = arr.min(axis=0)
-        print("max = ", max)
-        print("min = ", min)
-        print("dimensions = ", max-min)
+        # print(arr)
+        size_max = arr.max(axis=0)
+        size_min = arr.min(axis=0)
+
         print("count = ", vertices_count/3)
+        self.trisCountChangeSig.emit(int(vertices_count/3))
+        x, y, z = (abs(size_max)+abs(size_min))
+        self.dimensionChangeSig.emit(x, y, z)
 
     @ Slot(QImage)
     def model(self, reply):
         reply.mirrored()
         image = QPixmap.fromImage(reply)
 
-        #global ref_to_img_widget
-        #img = ref_to_img_widget.addPixmap(image)
-        #img.setPos(0, -500)
+        # global ref_to_img_widget
+        # img = ref_to_img_widget.addPixmap(image)
+        # img.setPos(0, -500)
         # ref_to_img_widget.update()
 
 
-pyobject = Test()
+pyobject = MeshUtils()
 
 
 class Model3dWidget(QQuickWidget):
     def __init__(self):
         super().__init__()
-        global provider
-        global windowProvider
+        provider = MeshManager()
+        bed = BedManager()
         self.engine().rootContext().setContextProperty(
             "_renderCaptureProvider", pyobject)
         self.engine().rootContext().setContextProperty("r_manager", provider)
-        self.engine().rootContext().setContextProperty("window_manager", windowProvider)
-        self.setSource(QUrl.fromLocalFile("main.qml"))
+        self.engine().rootContext().setContextProperty("window_manager", bed)
+        self.setSource(QUrl.fromLocalFile("qml/main.qml"))
         self.setResizeMode(QQuickWidget.SizeRootObjectToView)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)

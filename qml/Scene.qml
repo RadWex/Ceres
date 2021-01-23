@@ -196,8 +196,8 @@ Entity {
 
         GridEntity {
             id: raydisplay
-            sizeX: 200
-            sizeY: 200
+            sizeX: window_manager.xBed
+            sizeY: window_manager.yBed
         }
         AxisEntity {
             length: 20

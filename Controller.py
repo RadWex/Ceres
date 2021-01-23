@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QObject
+from PySide2.QtCore import QObject
 
 
 class ControllerMeta(type):
@@ -37,6 +37,15 @@ class Controller(metaclass=ControllerMeta):
                 if v == v2:
                     #print(v, ' ', v2)
                     k.connect(k2)
+
+    def addTempSend(self, name, signal):
+        """signal is not added to dict; 
+            slot must be already in dict; 
+            disconnect signal after use;
+            use for temporary windows"""
+        for k, v in self.slots.items():
+            if name == v:
+                signal.connect(k)
 
     def showConnections(self):
         for k, v in self.signals.items():

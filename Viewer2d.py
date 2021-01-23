@@ -3,6 +3,7 @@ from PySide2.QtGui import QPixmap
 from PySide2.QtCore import Qt
 from PIL.ImageQt import ImageQt
 from PIL import Image
+from Controller import Controller
 im = Image.open("images/tex.jpg")
 im = im.convert('L')
 
@@ -12,6 +13,8 @@ ref_to_img_widget = None
 class ImageWidget(QGraphicsView):
     def __init__(self):
         super().__init__()
+        contr = Controller()
+        contr.addRecive('2d/opacity', self.setOpacity)
         self._zoom = 0
         self.setDragMode(QGraphicsView.ScrollHandDrag)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
@@ -43,3 +46,6 @@ class ImageWidget(QGraphicsView):
             factor = 0.8
             self._zoom -= 1
         self.scale(factor, factor)
+
+    def setOpacity(self, value):
+        self.item1.setOpacity(value)
