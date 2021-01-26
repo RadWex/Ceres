@@ -7,8 +7,6 @@ from Controller import Controller
 im = Image.open("images/tex.jpg")
 im = im.convert('L')
 
-ref_to_img_widget = None
-
 
 class ImageWidget(QGraphicsView):
     modelChangePathSig = Signal(str)
@@ -20,6 +18,7 @@ class ImageWidget(QGraphicsView):
         contr.addRecive('2d/opacity', self.setOpacity)
         contr.addSend("3d/model/path", self.modelChangePathSig)
         contr.addSend("3d/model/name", self.modelChangeNameSig)
+        contr.addRecive('3d/view/top', self.addCameraItem)
 
         self.setAcceptDrops(True)
         self._zoom = 0
@@ -30,8 +29,6 @@ class ImageWidget(QGraphicsView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         # self.scale(1,-1) #tuaj
         self.scene = QGraphicsScene()
-        global ref_to_img_widget
-        ref_to_img_widget = self.scene
         global im
         qim = ImageQt(im)
         self.pixmap = QPixmap.fromImage(qim)
@@ -53,6 +50,11 @@ class ImageWidget(QGraphicsView):
             factor = 0.8
             self._zoom -= 1
         self.scale(factor, factor)
+
+    def addCameraItem(self, image):
+        img = self.scene.addPixmap(image)
+        img.setPos(0, -500)
+        self.scene.update()
 
     def setOpacity(self, value):
         self.item1.setOpacity(value)

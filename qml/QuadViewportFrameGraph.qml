@@ -9,32 +9,51 @@ RenderSettings {
     id: quadViewportFrameGraph
     property alias topLeftCamera: cameraSelectorTopLeftViewport.camera;
     property alias bottomRightCamera: cameraSelectorBottomRightViewport.camera;
-    property alias window: surfaceSelector.surface
     property var renCap: renderCapture
 
-    activeFrameGraph: RenderSurfaceSelector {
-        id: surfaceSelector
-        ClearBuffers {
-            buffers: ClearBuffers.ColorDepthBuffer
-            clearColor: Qt.rgba(0.6, 0.6, 0.6, 1.0)
-            Viewport {
-                id: topLeftViewport
-                CameraSelector{
-                    id: cameraSelectorTopLeftViewport
+    RenderSurfaceSelector {
+        CameraSelector{
+            id: cameraSelectorTopLeftViewport
+            FrustumCulling {
+                ClearBuffers {
+                    buffers: ClearBuffers.AllBuffers
+                    clearColor: Qt.rgba(0.6, 0.6, 0.6, 1.0)
+                    NoDraw {}
+                }
+                LayerFilter {
+                    filterMode: LayerFilter.AcceptAnyMatchingLayers
+                    layers: [modelLayer, lightLayer]
                     RenderCapture {
                         id:renderCapture
                     }
                 }
             }
+            
         }
-
-        ClearBuffers {
-            buffers: ClearBuffers.ColorDepthBuffer
-            clearColor: Qt.rgba(0.6, 0.6, 0.6, 1.0)
-            NoDraw {}
-            CameraSelector{
-                id: cameraSelectorBottomRightViewport
+        
+        CameraSelector{
+            id: cameraSelectorBottomRightViewport
+            FrustumCulling {
+                ClearBuffers {
+                    buffers: ClearBuffers.AllBuffers
+                    clearColor: Qt.rgba(0.6, 0.6, 0.6, 1.0)
+                    NoDraw {}
+                }
+                LayerFilter {
+                    filterMode: LayerFilter.DiscardAnyMatchingLayers
+                    layers: [topLayer]
+                }
+                LayerFilter {
+                    filterMode: LayerFilter.AcceptAnyMatchingLayers
+                    layers: [topLayer]
+                    ClearBuffers {
+                        buffers: ClearBuffers.DepthBuffer
+                    }
+                }
             }
-        }
+        }  
     }
+    pickingSettings.pickMethod: PickingSettings.TrianglePicking
+    pickingSettings.pickResultMode: PickingSettings.AllPicks
+    pickingSettings.faceOrientationPickingMode: PickingSettings.FrontAndBackFace
 }

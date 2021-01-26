@@ -10,7 +10,7 @@ Entity {
     property bool move: true
     property var set_parent
     property var reply
-
+    
     function doRenderCapture()
     {
         reply = scene.requestRenderCapture()
@@ -40,14 +40,7 @@ Entity {
         bottomRightCamera: cameraSet.cameras[1]
     }
 
-    // Event Source will be set by the Qt3DQuickWindow
     InputSettings { id: inputSettings }
-
-    OrbitCameraController {
-            lookSpeed: 1000
-            linearSpeed: 1500
-            camera: camera
-        }
 
     Entity {
         id: cameraSet
@@ -80,6 +73,18 @@ Entity {
             viewCenter: Qt.vector3d(100.0, 0.0, -100.0)
         }
     }
+
+    SOrbitCameraController {
+            id: mainCameraController
+            camera: camera
+    }
+
+    Layer {
+                id: topLayer
+                recursive: true
+            }
+    //hoverEnabled: true // needed for ObjectPickers to handle hover events
+
     /*
     function printHits(desc, hits) {
             console.log(desc, hits.length)
@@ -111,12 +116,6 @@ Entity {
     */
 
 
-    //Buffer{
-   //     data:  geometryLoaded(modelMesh)
-    //}
-
-    Entity {
-        id: sceneRoot
 
         //Component.onCompleted: {doRenderCapture()}//do poprawy
         PhongMaterial {
@@ -127,6 +126,10 @@ Entity {
         }
 
         Entity {
+            id: model
+            Layer {
+                id: modelLayer
+            }
             Mesh {
                 id: modelMesh
                 source: r_manager.modelChange
@@ -134,11 +137,11 @@ Entity {
                 onStatusChanged: {
                     if (modelMesh.state == 'ready' )
                         doRenderCapture()
-
+                    //console.log(r_manager.origin)
                     if(modelMesh.geometry == null)
                         return
                     //console.log(modelMesh.geometry)
-                    _renderCaptureProvider.dawaj_model(modelMesh.geometry)
+                    _renderCaptureProvider.get_geometry(modelMesh.geometry)
                     
                 }
             }
@@ -151,6 +154,7 @@ Entity {
                 rotationX: r_manager.x_rot-90
                 rotationY: r_manager.z_rot
                 rotationZ: -r_manager.y_rot
+                //matrix: rotateAround(Qt.point(1,1), userAngle, Qt.vector3d( 0.0, 0.0, 1.0 ))
                 scale3D: Qt.vector3d(r_manager.x_scale,r_manager.y_scale,r_manager.z_scale)
                 //PropertyChanges {
                     //target: qmlNote
@@ -159,10 +163,24 @@ Entity {
                 onScale3DChanged: doRenderCapture()
                 onRotationXChanged: doRenderCapture()
                 onTranslationChanged: doRenderCapture()
-
             }
-            components: [modelMesh, material, modelTransform/*, screenRayCaster, mouseHandler*/]
+            ObjectPicker {
+                        id: modelPicker
+                        onClicked: tg.attachTo(model)
+                    }
+            TransformGizmo {
+                id: tg
+                layer: topLayer
+                cameraController: mainCameraController
+                camera: camera
+                scene3d: set_parent
+                targetTransform: modelTransform
+                size: 0.125 * absolutePosition.minus(camera.position).length()
+            }
+
+            components: [modelMesh, material, modelTransform, modelPicker, modelLayer/*, screenRayCaster, mouseHandler*/]
         }
+
 
         Entity {
             PhongMaterial {
@@ -206,7 +224,11 @@ Entity {
         AxisEntity {
             length: 20
         }
-        LightEntity{}
+        LightEntity{
+            Layer {
+                id: lightLayer
+            }
+            layer: lightLayer
+        }
 
-    } // sceneRoot
 }

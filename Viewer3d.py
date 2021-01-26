@@ -1,5 +1,5 @@
 import numpy as np
-from PySide2.QtGui import QPixmap, QImage
+from PySide2.QtGui import QPixmap, QImage, QVector3D
 from PySide2.QtCore import Signal, Property, Slot, QUrl, QObject
 from PySide2.QtQuickWidgets import QQuickWidget
 from PySide2.QtWidgets import QSizePolicy
@@ -19,9 +19,6 @@ class ToModelManipulation(QObject):
     xScaleChangeSig = Signal(float)
     yScaleChangeSig = Signal(float)
     zScaleChangeSig = Signal(float)
-    xDimensionChangeSig = Signal(float)
-    yDimensionChangeSig = Signal(float)
-    zDimensionChangeSig = Signal(float)
 
     def __init__(self, parent=None):
         super(ToModelManipulation, self).__init__(parent)
@@ -36,11 +33,6 @@ class ToModelManipulation(QObject):
         contr.addSend("3d/model/scale/x", self.xScaleChangeSig)
         contr.addSend("3d/model/scale/y", self.yScaleChangeSig)
         contr.addSend("3d/model/scale/z", self.zScaleChangeSig)
-        contr.addSend("3d/model/dimension/x", self.xDimensionChangeSig)
-        contr.addSend("3d/model/dimension/y", self.yDimensionChangeSig)
-        contr.addSend("3d/model/dimension/z", self.zDimensionChangeSig)
-
-        contr.addRecive("3d/model/dimension", self.sendDimension)
 
     def sendLocations(self, x: float, y: float, z: float):
         self.xLocationChangeSig.emit(x)
@@ -60,11 +52,6 @@ class ToModelManipulation(QObject):
                   round(z, 2)]
         self.originChangeSig.emit(origin)
 
-    def sendDimension(self, x: float, y: float, z: float):
-        self.xDimensionChangeSig.emit(x)
-        self.yDimensionChangeSig.emit(y)
-        self.zDimensionChangeSig.emit(z)
-
 
 class MeshManager(QObject):
     modelChanged = Signal(str)
@@ -77,6 +64,7 @@ class MeshManager(QObject):
     x_scale_Changed = Signal(float)
     y_scale_Changed = Signal(float)
     z_scale_Changed = Signal(float)
+    originChanged = Signal(QVector3D)
 
     def __init__(self, parent=None):
         super(MeshManager, self).__init__(parent)
@@ -107,9 +95,7 @@ class MeshManager(QObject):
         self._y_scale = 1
         self._z_scale = 1
         self._modelChange = ""
-        # contr.addRecive("3d/model/dimension/x", self.set_x_dimen)
-        # contr.addRecive("3d/model/dimension/y", self.set_y_dimen)
-        # contr.addRecive("3d/model/dimension/z", self.set_z_dimen)
+        self._origin = [0, 0, 0]
         self.loadSettings()
 
     def loadSettings(self):
@@ -203,9 +189,17 @@ class MeshManager(QObject):
             self._z_scale = angle
             self.z_scale_Changed.emit(angle)
 
-    # dimension
-    def set_x_dimension(self, x):
-        angle = angle/100.0
+    # origin
+    @Property(QVector3D, notify=originChanged)
+    def origin(self):
+        return QVector3D(self._origin[0], self._origin[1], self._origin[2])
+
+    def set_origin(self, x, y, z):
+        self._origin = [round(x, 2),
+                        round(y, 2),
+                        round(z, 2)]
+        self.originChanged.emit(
+            QVector3D(self._origin[0], self._origin[1], self._origin[2]))
 
     # model
 
@@ -228,6 +222,7 @@ class MeshManager(QObject):
         self.set_y(new_y)
         self.set_z(new_z)
         self.send.sendOrigin(min[0], min[1], min[2])
+        self.set_origin(min[0], min[1], min[2])
         self.send.sendLocations(new_x, new_y, new_z)
 
 
@@ -268,6 +263,7 @@ class MeshUtils(QObject):
     trisCountChangeSig = Signal(int)
     dimensionChangeSig = Signal(float, float, float)
     boundingChangeSig = Signal(list, list)
+    imageChangeSig = Signal(QPixmap)
 
     def __init__(self):
         super(MeshUtils, self).__init__()
@@ -275,9 +271,10 @@ class MeshUtils(QObject):
         contr.addSend("3d/model/tris", self.trisCountChangeSig)
         contr.addSend("3d/model/dimension", self.dimensionChangeSig)
         contr.addSend("3d/model/bounding", self.boundingChangeSig)
+        contr.addSend("3d/view/top", self.imageChangeSig)
 
     @ Slot(Qt3DRender.QGeometry)
-    def dawaj_model(self, reply):
+    def get_geometry(self, reply):
         vertexPosition = None
         atributes = reply.attributes()
         for i in atributes:
@@ -310,7 +307,7 @@ class MeshUtils(QObject):
     def model(self, reply):
         reply.mirrored()
         image = QPixmap.fromImage(reply)
-
+        self.imageChangeSig.emit(image)
         # global ref_to_img_widget
         # img = ref_to_img_widget.addPixmap(image)
         # img.setPos(0, -500)
@@ -341,6 +338,7 @@ class Model3dWidget(QQuickWidget):
         self.setResizeMode(QQuickWidget.SizeRootObjectToView)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
+    '''
     def dragMoveEvent(self, e):
         e.acceptProposedAction()
 
@@ -356,3 +354,4 @@ class Model3dWidget(QQuickWidget):
         tmp = fname.rsplit('/', 1)
         self.modelChangeNameSig.emit(tmp[-1])
         self.modelChangePathSig.emit("file:///"+fname)
+    '''

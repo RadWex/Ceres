@@ -15,6 +15,7 @@ Item {
     Scene3D {
         id: scene3d
         multisample: true
+        hoverEnabled: true
         //anchors.fill: parent
         width: parent.width
         height: parent.height

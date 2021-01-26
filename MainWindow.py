@@ -4,7 +4,7 @@ from PySide2.QtWidgets import (QMainWindow, QStatusBar,
                                QWidget, QVBoxLayout,
                                QLabel, QSlider,
                                QGroupBox, QComboBox,
-                               QDesktopWidget, QDialog)
+                               QDesktopWidget)
 from PySide2.QtCore import Qt, Signal
 from TabsContainer import TabContainerWidget
 from SettingsWindow import SettingsWindow
@@ -135,12 +135,9 @@ class MainWindow(QMainWindow):
         self.statusBar.showMessage("Model loaded")
 
     def openSettingsWindow(self):
-        dialog = SettingsWindow(self)
-        if dialog.exec_() == QDialog.Accepted:
-            print('settings windwo')
-        else:
-            print('Cancelled')
-        dialog.deleteLater()
+        self.sw = SettingsWindow(self)
+        self.sw.setWindowModality(Qt.ApplicationModal)
+        self.sw.show()
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls:
