@@ -8,6 +8,64 @@ from Settings import Settings
 from Controller import Controller
 
 
+class ToModelManipulation(QObject):
+    xLocationChangeSig = Signal(float)
+    yLocationChangeSig = Signal(float)
+    zLocationChangeSig = Signal(float)
+    originChangeSig = Signal(list)
+    xRotationChangeSig = Signal(float)
+    yRotationChangeSig = Signal(float)
+    zRotationChangeSig = Signal(float)
+    xScaleChangeSig = Signal(float)
+    yScaleChangeSig = Signal(float)
+    zScaleChangeSig = Signal(float)
+    xDimensionChangeSig = Signal(float)
+    yDimensionChangeSig = Signal(float)
+    zDimensionChangeSig = Signal(float)
+
+    def __init__(self, parent=None):
+        super(ToModelManipulation, self).__init__(parent)
+        contr = Controller()
+        contr.addSend("3d/model/location/x", self.xLocationChangeSig)
+        contr.addSend("3d/model/location/y", self.yLocationChangeSig)
+        contr.addSend("3d/model/location/z", self.zLocationChangeSig)
+        contr.addSend("3d/model/origin", self.originChangeSig)
+        contr.addSend("3d/model/rotation/x", self.xRotationChangeSig)
+        contr.addSend("3d/model/rotation/y", self.yRotationChangeSig)
+        contr.addSend("3d/model/rotation/z", self.zRotationChangeSig)
+        contr.addSend("3d/model/scale/x", self.xScaleChangeSig)
+        contr.addSend("3d/model/scale/y", self.yScaleChangeSig)
+        contr.addSend("3d/model/scale/z", self.zScaleChangeSig)
+        contr.addSend("3d/model/dimension/x", self.xDimensionChangeSig)
+        contr.addSend("3d/model/dimension/y", self.yDimensionChangeSig)
+        contr.addSend("3d/model/dimension/z", self.zDimensionChangeSig)
+
+        contr.addRecive("3d/model/dimension", self.sendDimension)
+
+    def sendLocations(self, x: float, y: float, z: float):
+        self.xLocationChangeSig.emit(x)
+        self.yLocationChangeSig.emit(y)
+        self.zLocationChangeSig.emit(z)
+
+        self.xRotationChangeSig.emit(0)
+        self.yRotationChangeSig.emit(0)
+        self.zRotationChangeSig.emit(0)
+        self.xScaleChangeSig.emit(100)
+        self.yScaleChangeSig.emit(100)
+        self.zScaleChangeSig.emit(100)
+
+    def sendOrigin(self, x: float, y: float, z: float):
+        origin = [round(x, 2),
+                  round(y, 2),
+                  round(z, 2)]
+        self.originChangeSig.emit(origin)
+
+    def sendDimension(self, x: float, y: float, z: float):
+        self.xDimensionChangeSig.emit(x)
+        self.yDimensionChangeSig.emit(y)
+        self.zDimensionChangeSig.emit(z)
+
+
 class MeshManager(QObject):
     modelChanged = Signal(str)
     xChanged = Signal(float)
@@ -22,19 +80,9 @@ class MeshManager(QObject):
 
     def __init__(self, parent=None):
         super(MeshManager, self).__init__(parent)
-        self.modelName = ""
-        self._x = 0
-        self._y = 0
-        self._z = 0
-        self._x_rot = 0
-        self._y_rot = 0
-        self._z_rot = 0
-        self._x_scale = 1
-        self._y_scale = 1
-        self._z_scale = 1
-        self._modelChange = "../meshes/circle.stl"
         contr = Controller()
         contr.addRecive("3d/model/path", self.set_modelChange)
+        contr.addRecive("3d/model/bounding", self.set_model_on_center)
         contr.addRecive("3d/model/location/x", self.set_x)
         contr.addRecive("3d/model/location/y", self.set_y)
         contr.addRecive("3d/model/location/z", self.set_z)
@@ -44,9 +92,30 @@ class MeshManager(QObject):
         contr.addRecive("3d/model/scale/x", self.set_x_scale)
         contr.addRecive("3d/model/scale/y", self.set_y_scale)
         contr.addRecive("3d/model/scale/z", self.set_z_scale)
+
+        self.send = ToModelManipulation()
+
+        self.bedX = 0
+        self.bedY = 0
+        self._x = 0
+        self._y = 0
+        self._z = 0
+        self._x_rot = 0
+        self._y_rot = 0
+        self._z_rot = 0
+        self._x_scale = 1
+        self._y_scale = 1
+        self._z_scale = 1
+        self._modelChange = ""
         # contr.addRecive("3d/model/dimension/x", self.set_x_dimen)
         # contr.addRecive("3d/model/dimension/y", self.set_y_dimen)
         # contr.addRecive("3d/model/dimension/z", self.set_z_dimen)
+        self.loadSettings()
+
+    def loadSettings(self):
+        settings = Settings()
+        self.bedX = float(settings.printerSettings['bed_size_x'])
+        self.bedY = float(settings.printerSettings['bed_size_x'])
 
     @Property(float, notify=xChanged)
     def x(self):
@@ -134,7 +203,12 @@ class MeshManager(QObject):
             self._z_scale = angle
             self.z_scale_Changed.emit(angle)
 
+    # dimension
+    def set_x_dimension(self, x):
+        angle = angle/100.0
+
     # model
+
     @Property(str, notify=modelChanged)
     def modelChange(self):
         return self._modelChange
@@ -143,6 +217,18 @@ class MeshManager(QObject):
         if self._modelChange != path:
             self._modelChange = path
             self.modelChanged.emit(path)
+
+    def set_model_on_center(self, min, max):
+        x = (min[0] + max[0]) / 2
+        y = (min[1] + max[1]) / 2
+        new_x = (self.bedX/2)-x
+        new_y = (self.bedY/2)-y
+        new_z = -min[2]
+        self.set_x(new_x)  # propraw
+        self.set_y(new_y)
+        self.set_z(new_z)
+        self.send.sendOrigin(min[0], min[1], min[2])
+        self.send.sendLocations(new_x, new_y, new_z)
 
 
 class BedManager(QObject):
@@ -181,12 +267,14 @@ class BedManager(QObject):
 class MeshUtils(QObject):
     trisCountChangeSig = Signal(int)
     dimensionChangeSig = Signal(float, float, float)
+    boundingChangeSig = Signal(list, list)
 
     def __init__(self):
         super(MeshUtils, self).__init__()
         contr = Controller()
         contr.addSend("3d/model/tris", self.trisCountChangeSig)
         contr.addSend("3d/model/dimension", self.dimensionChangeSig)
+        contr.addSend("3d/model/bounding", self.boundingChangeSig)
 
     @ Slot(Qt3DRender.QGeometry)
     def dawaj_model(self, reply):
@@ -208,11 +296,13 @@ class MeshUtils(QObject):
             # print("%.2f %.2f %.2f" % (i,j,k))
 
         # print(arr)
-        size_max = arr.max(axis=0)
         size_min = arr.min(axis=0)
+        size_max = arr.max(axis=0)
+        self.boundingChangeSig.emit(size_min, size_max)
 
         print("count = ", vertices_count/3)
         self.trisCountChangeSig.emit(int(vertices_count/3))
+
         x, y, z = (abs(size_max)+abs(size_min))
         self.dimensionChangeSig.emit(x, y, z)
 
@@ -231,8 +321,16 @@ pyobject = MeshUtils()
 
 
 class Model3dWidget(QQuickWidget):
+    modelChangePathSig = Signal(str)
+    modelChangeNameSig = Signal(str)
+
     def __init__(self):
         super().__init__()
+        contr = Controller()
+        contr.addSend("3d/model/path", self.modelChangePathSig)
+        contr.addSend("3d/model/name", self.modelChangeNameSig)
+
+        self.setAcceptDrops(True)
         provider = MeshManager()
         bed = BedManager()
         self.engine().rootContext().setContextProperty(
@@ -242,3 +340,19 @@ class Model3dWidget(QQuickWidget):
         self.setSource(QUrl.fromLocalFile("qml/main.qml"))
         self.setResizeMode(QQuickWidget.SizeRootObjectToView)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+    def dragMoveEvent(self, e):
+        e.acceptProposedAction()
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls:
+            event.accept()
+        else:
+            event.ingore()
+
+    def dropEvent(self, event):
+        urls = event.mimeData().urls()
+        fname = urls[0].toLocalFile()
+        tmp = fname.rsplit('/', 1)
+        self.modelChangeNameSig.emit(tmp[-1])
+        self.modelChangePathSig.emit("file:///"+fname)

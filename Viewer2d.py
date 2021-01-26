@@ -1,6 +1,6 @@
 from PySide2.QtWidgets import QGraphicsView, QGraphicsScene
 from PySide2.QtGui import QPixmap
-from PySide2.QtCore import Qt
+from PySide2.QtCore import Qt, Signal
 from PIL.ImageQt import ImageQt
 from PIL import Image
 from Controller import Controller
@@ -11,10 +11,17 @@ ref_to_img_widget = None
 
 
 class ImageWidget(QGraphicsView):
+    modelChangePathSig = Signal(str)
+    modelChangeNameSig = Signal(str)
+
     def __init__(self):
         super().__init__()
         contr = Controller()
         contr.addRecive('2d/opacity', self.setOpacity)
+        contr.addSend("3d/model/path", self.modelChangePathSig)
+        contr.addSend("3d/model/name", self.modelChangeNameSig)
+
+        self.setAcceptDrops(True)
         self._zoom = 0
         self.setDragMode(QGraphicsView.ScrollHandDrag)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
@@ -49,3 +56,19 @@ class ImageWidget(QGraphicsView):
 
     def setOpacity(self, value):
         self.item1.setOpacity(value)
+
+    def dragMoveEvent(self, e):
+        e.acceptProposedAction()
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls:
+            event.accept()
+        else:
+            event.ingore()
+
+    def dropEvent(self, event):
+        urls = event.mimeData().urls()
+        fname = urls[0].toLocalFile()
+        tmp = fname.rsplit('/', 1)
+        self.modelChangeNameSig.emit(tmp[-1])
+        self.modelChangePathSig.emit("file:///"+fname)

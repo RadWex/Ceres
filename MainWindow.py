@@ -3,7 +3,8 @@ from PySide2.QtWidgets import (QMainWindow, QStatusBar,
                                QFileDialog, QAction,
                                QWidget, QVBoxLayout,
                                QLabel, QSlider,
-                               QGroupBox, QComboBox)
+                               QGroupBox, QComboBox,
+                               QDesktopWidget, QDialog)
 from PySide2.QtCore import Qt, Signal
 from TabsContainer import TabContainerWidget
 from SettingsWindow import SettingsWindow
@@ -19,6 +20,8 @@ class MainWidget(QWidget):
         super().__init__()
         contr = Controller()
         contr.addSend("2d/opacity", self.opacityChangeSig)
+
+        self.setAcceptDrops(True)
 
         mainWidgetsLayout = QHBoxLayout()
         mainWidgetsLayout.addWidget(ImageWidget())
@@ -88,6 +91,7 @@ class MainWindow(QMainWindow):
 
         self.initialize_menu_bar()
         self.setWindowTitle("Ceres")
+        self.setAcceptDrops(True)
 
         # status bar
         self.statusBar = QStatusBar()
@@ -97,6 +101,12 @@ class MainWindow(QMainWindow):
         # central widget
         mainWidget = MainWidget()
         self.setCentralWidget(mainWidget)
+        # self.centerOnScreen()
+
+    def centerOnScreen(self):
+        resolution = QDesktopWidget().screenGeometry()
+        self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
+                  (resolution.height() / 2) - (self.frameSize().height() / 2))
 
     def initialize_menu_bar(self):
         menu_bar = QMenuBar()
@@ -125,5 +135,22 @@ class MainWindow(QMainWindow):
         self.statusBar.showMessage("Model loaded")
 
     def openSettingsWindow(self):
-        self.sw = SettingsWindow()
-        self.sw.show()
+        dialog = SettingsWindow(self)
+        if dialog.exec_() == QDialog.Accepted:
+            print('settings windwo')
+        else:
+            print('Cancelled')
+        dialog.deleteLater()
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls:
+            event.accept()
+        else:
+            event.ingore()
+
+    def dropEvent(self, event):
+        urls = event.mimeData().urls()
+        fname = urls[0].toLocalFile()
+        tmp = fname.rsplit('/', 1)
+        self.modelChangeNameSig.emit(tmp[-1])
+        self.modelChangePathSig.emit("file:///"+fname)

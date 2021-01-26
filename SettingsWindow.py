@@ -1,11 +1,11 @@
-from PySide2.QtWidgets import (QMainWindow, QStatusBar,
+from PySide2.QtWidgets import (QDialog, QStatusBar,
                                QGridLayout, QMenuBar,
                                QFileDialog, QAction,
-                               QWidget, QLabel,
+                               QSizePolicy, QLabel,
                                QLineEdit, QPushButton,
                                QHBoxLayout, QVBoxLayout,
                                QGroupBox, QComboBox,
-                               QDoubleSpinBox, QSizePolicy)
+                               QDoubleSpinBox)
 from PySide2.QtGui import QDoubleValidator, Qt
 from PySide2.QtCore import Signal
 from PySide2.QtGui import QImage, QPixmap
@@ -14,11 +14,11 @@ from Controller import Controller
 import sys
 
 
-class SettingsWindow(QWidget):
+class SettingsWindow(QDialog):
     bedSizeChangeSig = Signal(float, float)
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        QDialog.__init__(self, parent)
         contr = Controller()
         contr.addTempSend("3d/bedSize", self.bedSizeChangeSig)
 
@@ -133,7 +133,7 @@ class SettingsWindow(QWidget):
         saveButton = QPushButton('Save')
         saveButton.clicked.connect(self.set_printer_settings)
         cencelButton = QPushButton('Close')
-        cencelButton.clicked.connect(self.close)
+        cencelButton.clicked.connect(self.reject)
 
         buttonsLayout = QHBoxLayout()
         buttonsLayout.addWidget(addButton)
@@ -155,4 +155,4 @@ class SettingsWindow(QWidget):
         self.bedSizeChangeSig.emit(float(bedX), float(bedY))
         self.bedSizeChangeSig.disconnect()
         settings.save()
-        self.close()
+        self.accept()

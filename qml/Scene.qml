@@ -10,6 +10,7 @@ Entity {
     property bool move: true
     property var set_parent
     property var reply
+
     function doRenderCapture()
     {
         reply = scene.requestRenderCapture()
@@ -129,13 +130,16 @@ Entity {
             Mesh {
                 id: modelMesh
                 source: r_manager.modelChange
-                onSourceChanged: doRenderCapture()
+                //onSourceChanged: doRenderCapture()
                 onStatusChanged: {
-                    doRenderCapture()
+                    if (modelMesh.state == 'ready' )
+                        doRenderCapture()
+
                     if(modelMesh.geometry == null)
                         return
                     //console.log(modelMesh.geometry)
                     _renderCaptureProvider.dawaj_model(modelMesh.geometry)
+                    
                 }
             }
 
