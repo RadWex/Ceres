@@ -10,7 +10,7 @@ Item {
     height: 500
     visible: true
     //anchors.fill: parent
-    property bool move : true
+    property bool move : false
     //![1]
     Scene3D {
         id: scene3d

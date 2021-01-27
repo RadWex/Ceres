@@ -346,7 +346,6 @@ class Model3dWidget(QQuickWidget):
         # self.setResizeMode(QQuickWidget.SizeRootObjectToView)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-    '''
     def dragMoveEvent(self, e):
         e.acceptProposedAction()
 
@@ -362,4 +361,3 @@ class Model3dWidget(QQuickWidget):
         tmp = fname.rsplit('/', 1)
         self.modelChangeNameSig.emit(tmp[-1])
         self.modelChangePathSig.emit("file:///"+fname)
-    '''

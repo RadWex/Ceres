@@ -11,6 +11,8 @@ RenderSettings {
     property alias bottomRightCamera: cameraSelectorBottomRightViewport.camera;
     property var renCap: renderCapture
 
+    Viewport {
+                        normalizedRect: Qt.rect(0.0, 0.0, 1.0, 1.0)
     RenderSurfaceSelector {
         CameraSelector{
             id: cameraSelectorTopLeftViewport
@@ -52,6 +54,7 @@ RenderSettings {
                 }
             }
         }  
+    }
     }
     pickingSettings.pickMethod: PickingSettings.TrianglePicking
     pickingSettings.pickResultMode: PickingSettings.AllPicks

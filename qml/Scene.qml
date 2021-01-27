@@ -142,8 +142,7 @@ Entity {
                         return
                     //console.log(modelMesh.geometry)
                     _renderCaptureProvider.get_geometry(modelMesh.geometry)
-                    tg.attachTo(model)
-                    
+                    //tg.attachTo(model)
                 }
             }
 
@@ -178,7 +177,12 @@ Entity {
             components: [modelMesh, material, modelTransform, modelLayer/*, screenRayCaster, mouseHandler*/]
         }
 
-
+        onMoveChanged: {
+            if(move == true)
+                tg.attachTo(model)
+            else
+                tg.detach()
+        }
         Entity {
             PhongMaterial {
                 id: mat

@@ -168,12 +168,8 @@ Entity {
         //targetTransform.translation.z += linearSpeed * dz
     }
 
-    function save_translate(){
-        //r_manager.set_x(copy)
-        //targetTransform.translation.x = r_manager.x
-        //r_manager.set_y(targetTransform.translation.z)
-        //r_manager.set_z(-targetTransform.translation.y)
-    }
+
+
     Transform {
         id: ownTransform
     }
@@ -214,7 +210,6 @@ Entity {
             if(activeElement === TransformGizmo.UIElement.None) return
             if(cameraController) cameraController.enabled = true
             activeElement = TransformGizmo.UIElement.None
-            save_translate()
         }
     }
 
