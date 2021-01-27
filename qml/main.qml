@@ -10,7 +10,7 @@ Item {
     height: 500
     visible: true
     //anchors.fill: parent
-    property bool move : false
+    property bool move : true
     //![1]
     Scene3D {
         id: scene3d
@@ -28,7 +28,7 @@ Item {
         }
     }
 
-
+    
     Rectangle {
         id: object2d
         color: "#33000000"
@@ -48,6 +48,7 @@ Item {
                     mainview.move = false
                 else
                     mainview.move = true
+                console.log(mainview.move)
             }
         }
 

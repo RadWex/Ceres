@@ -7,7 +7,7 @@ import Qt3D.Extras 2.15
 
 Entity {
     id: rootNode
-    property bool move: true
+    property bool move
     property var set_parent
     property var reply
     
@@ -52,7 +52,7 @@ Entity {
             fieldOfView: 30
             aspectRatio: 16 / 9
             nearPlane: 0.1
-            farPlane: 1000.0
+            farPlane: 2000.0
             position: Qt.vector3d(100.0, 300.0, 300.0)
             //upVector: Qt.vector3d(-100.0, 0.0, -100.0)
             viewCenter: Qt.vector3d(100.0, 0.0, -100.0)
@@ -142,6 +142,7 @@ Entity {
                         return
                     //console.log(modelMesh.geometry)
                     _renderCaptureProvider.get_geometry(modelMesh.geometry)
+                    tg.attachTo(model)
                     
                 }
             }
@@ -163,22 +164,18 @@ Entity {
                 onScale3DChanged: doRenderCapture()
                 onRotationXChanged: doRenderCapture()
                 onTranslationChanged: doRenderCapture()
+                
             }
-            ObjectPicker {
-                        id: modelPicker
-                        onClicked: tg.attachTo(model)
-                    }
             TransformGizmo {
                 id: tg
                 layer: topLayer
                 cameraController: mainCameraController
                 camera: camera
-                scene3d: set_parent
-                targetTransform: modelTransform
-                size: 0.125 * absolutePosition.minus(camera.position).length()
+                is_active: move
+                //size: 0.125 * absolutePosition.minus(camera.position).length()
             }
 
-            components: [modelMesh, material, modelTransform, modelPicker, modelLayer/*, screenRayCaster, mouseHandler*/]
+            components: [modelMesh, material, modelTransform, modelLayer/*, screenRayCaster, mouseHandler*/]
         }
 
 
@@ -200,7 +197,7 @@ Entity {
                 translation.y: 0
                 translation.z: -100
             }
-            components: move ? [mod, mat, tran] : []
+            //components: move ? [mod, mat, tran] : []
             /*Component.onCompleted: {
                 mod.geometry.positionAttribute.buffer.setSyncData(true)
                 var vertexArray = new Float32Array(100);

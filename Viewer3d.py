@@ -107,24 +107,32 @@ class MeshManager(QObject):
     def x(self):
         return self._x
 
-    def set_x(self, new_w):
-        if self._x != new_w:
-            self._x = new_w
-            self.xChanged.emit(new_w)
+    @Slot(float)
+    def set_x(self, new_x):
+        print("nowe x", new_x)
+        new_x = round(new_x, 1)
+        if self._x != new_x:
+            self._x = new_x
+            self.xChanged.emit(new_x)
+            self.send.xLocationChangeSig.emit(new_x)
 
     @Property(float, notify=yChanged)
     def y(self):
         return self._y
 
+    @Slot(float)
     def set_y(self, new_y):
+        new_y = round(new_y, 1)
         if self._y != new_y:
             self._y = new_y
             self.yChanged.emit(new_y)
+            self.send.yLocationChangeSig.emit(new_y)
 
     @Property(float, notify=zChanged)
     def z(self):
         return self._z
 
+    @Slot(float)
     def set_z(self, new_z):
         if self._z != new_z:
             self._z = new_z
@@ -335,7 +343,7 @@ class Model3dWidget(QQuickWidget):
         self.engine().rootContext().setContextProperty("r_manager", provider)
         self.engine().rootContext().setContextProperty("window_manager", bed)
         self.setSource(QUrl.fromLocalFile("qml/main.qml"))
-        self.setResizeMode(QQuickWidget.SizeRootObjectToView)
+        # self.setResizeMode(QQuickWidget.SizeRootObjectToView)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
     '''
