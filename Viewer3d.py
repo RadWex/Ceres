@@ -109,7 +109,7 @@ class MeshManager(QObject):
 
     @Slot(float)
     def set_x(self, new_x):
-        print("nowe x", new_x)
+        # print("nowe x", new_x)
         new_x = round(new_x, 1)
         if self._x != new_x:
             self._x = new_x
@@ -134,9 +134,11 @@ class MeshManager(QObject):
 
     @Slot(float)
     def set_z(self, new_z):
+        new_z = round(new_z, 1)
         if self._z != new_z:
             self._z = new_z
             self.zChanged.emit(new_z)
+            self.send.zLocationChangeSig.emit(new_z)
 
     # rotation
     @Property(float, notify=x_rot_Changed)
@@ -202,7 +204,7 @@ class MeshManager(QObject):
     def origin(self):
         return QVector3D(self._origin[0], self._origin[1], self._origin[2])
 
-    def set_origin(self, x, y, z):
+    def set_central_origin(self, x, y, z):
         self._origin = [round(x, 2),
                         round(y, 2),
                         round(z, 2)]
@@ -223,6 +225,7 @@ class MeshManager(QObject):
     def set_model_on_center(self, min, max):
         x = (min[0] + max[0]) / 2
         y = (min[1] + max[1]) / 2
+        z = (min[2] + max[2]) / 2
         new_x = (self.bedX/2)-x
         new_y = (self.bedY/2)-y
         new_z = -min[2]
@@ -230,7 +233,7 @@ class MeshManager(QObject):
         self.set_y(new_y)
         self.set_z(new_z)
         self.send.sendOrigin(min[0], min[1], min[2])
-        self.set_origin(min[0], min[1], min[2])
+        self.set_central_origin(x, y, z)
         self.send.sendLocations(new_x, new_y, new_z)
 
 
@@ -316,10 +319,6 @@ class MeshUtils(QObject):
         reply.mirrored()
         image = QPixmap.fromImage(reply)
         self.imageChangeSig.emit(image)
-        # global ref_to_img_widget
-        # img = ref_to_img_widget.addPixmap(image)
-        # img.setPos(0, -500)
-        # ref_to_img_widget.update()
 
 
 pyobject = MeshUtils()

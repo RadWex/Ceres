@@ -133,27 +133,32 @@ Entity {
             Mesh {
                 id: modelMesh
                 source: r_manager.modelChange
-                //onSourceChanged: doRenderCapture()
                 onStatusChanged: {
+                    
                     if (modelMesh.state == 'ready' )
                         doRenderCapture()
+                        
                     //console.log(r_manager.origin)
                     if(modelMesh.geometry == null)
                         return
                     //console.log(modelMesh.geometry)
                     _renderCaptureProvider.get_geometry(modelMesh.geometry)
+                    console.log(r_manager.origin)
+                    
                     //tg.attachTo(model)
                 }
             }
 
             Transform {
                 id: modelTransform
+               // matrix: rotateAround(Qt.vector3d(-r_manager.origin.x, r_manager.origin.z, -r_manager.origin.y), -90, Qt.vector3d( 1.0, 0.0, 0.0 ))
                 translation.x: r_manager.x
                 translation.y: r_manager.z
                 translation.z: -r_manager.y
                 rotationX: r_manager.x_rot-90
                 rotationY: r_manager.z_rot
                 rotationZ: -r_manager.y_rot
+                
                 //matrix: rotateAround(Qt.point(1,1), userAngle, Qt.vector3d( 0.0, 0.0, 1.0 ))
                 scale3D: Qt.vector3d(r_manager.x_scale,r_manager.y_scale,r_manager.z_scale)
                 //PropertyChanges {

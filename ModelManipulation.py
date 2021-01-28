@@ -238,15 +238,15 @@ class ModelManipulation(QWidget):
 
     # set functions
     def set_x(self, value):
-        tmp = value+self.origin[0]
+        tmp = value + self.origin[0]
         self.x_input.setText("{:.2f}".format(tmp))
 
     def set_y(self, value):
-        tmp = value+self.origin[1]
+        tmp = value + self.origin[1]
         self.y_input.setText("{:.2f}".format(tmp))
 
     def set_z(self, value):
-        tmp = value+self.origin[2]
+        tmp = value + self.origin[2]
         self.z_input.setText("{:.2f}".format(tmp))
 
     def set_rot_x(self, value):

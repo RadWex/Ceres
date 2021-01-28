@@ -29,8 +29,6 @@ Entity {
     property var cameraController
     property Camera camera
     property Transform targetTransform
-    property var copy
-    property var copyY
     property real linearSpeed: 0.5
     property bool visible: false
     property vector3d absolutePosition: Qt.vector3d(0, 0, 0)
@@ -47,18 +45,6 @@ Entity {
         BeamZ
     }
 
-    function deepCopy(p, c) {
-        var c = c || {};
-        for (var i in p) {
-            if (typeof p[i] === 'object') {
-                c[i] = (p[i].constructor === Array) ? [] : {};
-                deepCopy(p[i], c[i]);
-            } else {
-                c[i] = p[i];
-            }
-        }
-        return c;
-    }
     // called by ObjectPickers of individual UI elements:
     function trackUIElement(element, active) {
         if(active) hoverElements.add(element)
@@ -142,6 +128,7 @@ Entity {
 
     function attachTo(entity) {
             targetTransform = getTransform(entity)
+            fixOwnTransform()
             visible = true
     }
 
@@ -157,18 +144,37 @@ Entity {
     
     function translate(dx, dy, dz) {
         if(!targetTransform) return
-        copy = targetTransform.translation.x
+        var copy = targetTransform.translation.x
         copy += linearSpeed * dx
         r_manager.set_x(copy)
-        copyY = -targetTransform.translation.z
+        var copyY = -targetTransform.translation.z
         copyY += linearSpeed * dy
         r_manager.set_y(copyY)
+        var copyZ = targetTransform.translation.y
+        copyZ += linearSpeed * dz
+        r_manager.set_z(copyZ)
         //targetTransform.translation.x += linearSpeed * dx
         //targetTransform.translation.y += linearSpeed * dy
         //targetTransform.translation.z += linearSpeed * dz
     }
 
+    function fixOwnTransform() {
+        // cancel rotation component of parent's (target) transform
+        var t = targetTransform.matrix
+        var i = t.inverted()
+        i = i.times(Qt.matrix4x4(1,0,0,t.m14+r_manager.origin.x,0,0,1,t.m24+r_manager.origin.z,0,-1,0,t.m34-r_manager.origin.y,0,0,0,1))
+        ownTransform.matrix = i
 
+        updateAbsolutePosition()
+    }
+
+    QQ2.Loader {
+        active: !!targetTransform
+        sourceComponent: QQ2.Connections {
+            target: targetTransform
+            onMatrixChanged: fixOwnTransform()
+        }
+    }
 
     Transform {
         id: ownTransform
