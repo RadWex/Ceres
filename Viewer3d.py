@@ -1,5 +1,5 @@
 import numpy as np
-from PySide2.QtGui import QPixmap, QImage, QVector3D
+from PySide2.QtGui import QPixmap, QImage, QVector3D, QMatrix4x4
 from PySide2.QtCore import Signal, Property, Slot, QUrl, QObject
 from PySide2.QtQuickWidgets import QQuickWidget
 from PySide2.QtWidgets import QSizePolicy
@@ -23,16 +23,16 @@ class ToModelManipulation(QObject):
     def __init__(self, parent=None):
         super(ToModelManipulation, self).__init__(parent)
         contr = Controller()
-        contr.addSend("3d/model/location/x", self.xLocationChangeSig)
-        contr.addSend("3d/model/location/y", self.yLocationChangeSig)
-        contr.addSend("3d/model/location/z", self.zLocationChangeSig)
+        contr.addSend("3d/model/location/x/set", self.xLocationChangeSig)
+        contr.addSend("3d/model/location/y/set", self.yLocationChangeSig)
+        contr.addSend("3d/model/location/z/set", self.zLocationChangeSig)
         contr.addSend("3d/model/origin", self.originChangeSig)
-        contr.addSend("3d/model/rotation/x", self.xRotationChangeSig)
-        contr.addSend("3d/model/rotation/y", self.yRotationChangeSig)
-        contr.addSend("3d/model/rotation/z", self.zRotationChangeSig)
-        contr.addSend("3d/model/scale/x", self.xScaleChangeSig)
-        contr.addSend("3d/model/scale/y", self.yScaleChangeSig)
-        contr.addSend("3d/model/scale/z", self.zScaleChangeSig)
+        contr.addSend("3d/model/rotation/x/set", self.xRotationChangeSig)
+        contr.addSend("3d/model/rotation/y/set", self.yRotationChangeSig)
+        contr.addSend("3d/model/rotation/z/set", self.zRotationChangeSig)
+        contr.addSend("3d/model/scale/x/set", self.xScaleChangeSig)
+        contr.addSend("3d/model/scale/y/set", self.yScaleChangeSig)
+        contr.addSend("3d/model/scale/z/set", self.zScaleChangeSig)
 
     def sendLocations(self, x: float, y: float, z: float):
         self.xLocationChangeSig.emit(x)
@@ -53,21 +53,13 @@ class ToModelManipulation(QObject):
         self.originChangeSig.emit(origin)
 
 
-class MeshManager(QObject):
+class TransformationMatrixManager(QObject):
     modelChanged = Signal(str)
-    xChanged = Signal(float)
-    yChanged = Signal(float)
-    zChanged = Signal(float)
-    x_rot_Changed = Signal(float)
-    y_rot_Changed = Signal(float)
-    z_rot_Changed = Signal(float)
-    x_scale_Changed = Signal(float)
-    y_scale_Changed = Signal(float)
-    z_scale_Changed = Signal(float)
+    matrixChanged = Signal(QMatrix4x4)
     originChanged = Signal(QVector3D)
 
     def __init__(self, parent=None):
-        super(MeshManager, self).__init__(parent)
+        super(TransformationMatrixManager, self).__init__(parent)
         contr = Controller()
         contr.addRecive("3d/model/path", self.set_modelChange)
         contr.addRecive("3d/model/bounding", self.set_model_on_center)
@@ -76,25 +68,17 @@ class MeshManager(QObject):
         contr.addRecive("3d/model/location/z", self.set_z)
         contr.addRecive("3d/model/rotation/x", self.set_x_rot)
         contr.addRecive("3d/model/rotation/y", self.set_y_rot)
-        contr.addRecive("3d/model/rotation/z", self.set_z_rot)
-        contr.addRecive("3d/model/scale/x", self.set_x_scale)
-        contr.addRecive("3d/model/scale/y", self.set_y_scale)
-        contr.addRecive("3d/model/scale/z", self.set_z_scale)
-
+        # contr.addRecive("3d/model/rotation/z", self.set_z_rot)
+        # contr.addRecive("3d/model/scale/x", self.set_x_scale)
+        # contr.addRecive("3d/model/scale/y", self.set_y_scale)
+        # contr.addRecive("3d/model/scale/z", self.set_z_scale)
         self.send = ToModelManipulation()
-
         self.bedX = 0
         self.bedY = 0
-        self._x = 0
-        self._y = 0
-        self._z = 0
-        self._x_rot = 0
-        self._y_rot = 0
-        self._z_rot = 0
-        self._x_scale = 1
-        self._y_scale = 1
-        self._z_scale = 1
         self._modelChange = ""
+        self._matrix = QMatrix4x4(
+            1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+        self._matrixPython = np.identity(4, dtype=np.float32)
         self._origin = [0, 0, 0]
         self.loadSettings()
 
@@ -102,116 +86,6 @@ class MeshManager(QObject):
         settings = Settings()
         self.bedX = float(settings.printerSettings['bed_size_x'])
         self.bedY = float(settings.printerSettings['bed_size_x'])
-
-    @Property(float, notify=xChanged)
-    def x(self):
-        return self._x
-
-    @Slot(float)
-    def set_x(self, new_x):
-        # print("nowe x", new_x)
-        new_x = round(new_x, 1)
-        if self._x != new_x:
-            self._x = new_x
-            self.xChanged.emit(new_x)
-            self.send.xLocationChangeSig.emit(new_x)
-
-    @Property(float, notify=yChanged)
-    def y(self):
-        return self._y
-
-    @Slot(float)
-    def set_y(self, new_y):
-        new_y = round(new_y, 1)
-        if self._y != new_y:
-            self._y = new_y
-            self.yChanged.emit(new_y)
-            self.send.yLocationChangeSig.emit(new_y)
-
-    @Property(float, notify=zChanged)
-    def z(self):
-        return self._z
-
-    @Slot(float)
-    def set_z(self, new_z):
-        new_z = round(new_z, 1)
-        if self._z != new_z:
-            self._z = new_z
-            self.zChanged.emit(new_z)
-            self.send.zLocationChangeSig.emit(new_z)
-
-    # rotation
-    @Property(float, notify=x_rot_Changed)
-    def x_rot(self):
-        return self._x_rot
-
-    def set_x_rot(self, angle):
-        if self._x_rot != angle:
-            self._x_rot = angle
-            self.x_rot_Changed.emit(angle)
-
-    @Property(float, notify=y_rot_Changed)
-    def y_rot(self):
-        return self._y_rot
-
-    def set_y_rot(self, angle):
-        if self._y_rot != angle:
-            self._y_rot = angle
-            self.y_rot_Changed.emit(angle)
-
-    @Property(float, notify=z_rot_Changed)
-    def z_rot(self):
-        return self._z_rot
-
-    def set_z_rot(self, angle):
-        if self._z_rot != angle:
-            self._z_rot = angle
-            self.z_rot_Changed.emit(angle)
-
-    # scale
-    @Property(float, notify=x_scale_Changed)
-    def x_scale(self):
-        return self._x_scale
-
-    def set_x_scale(self, angle):
-        angle = angle/100.0
-        if self._x_scale != angle:
-            self._x_scale = angle
-            self.x_scale_Changed.emit(angle)
-
-    @Property(float, notify=y_scale_Changed)
-    def y_scale(self):
-        return self._y_scale
-
-    def set_y_scale(self, angle):
-        angle = angle/100.0
-        if self._y_scale != angle:
-            self._y_scale = angle
-            self.y_scale_Changed.emit(angle)
-
-    @Property(float, notify=z_scale_Changed)
-    def z_scale(self):
-        return self._z_scale
-
-    def set_z_scale(self, angle):
-        angle = angle/100.0
-        if self._z_scale != angle:
-            self._z_scale = angle
-            self.z_scale_Changed.emit(angle)
-
-    # origin
-    @Property(QVector3D, notify=originChanged)
-    def origin(self):
-        return QVector3D(self._origin[0], self._origin[1], self._origin[2])
-
-    def set_central_origin(self, x, y, z):
-        self._origin = [round(x, 2),
-                        round(y, 2),
-                        round(z, 2)]
-        self.originChanged.emit(
-            QVector3D(self._origin[0], self._origin[1], self._origin[2]))
-
-    # model
 
     @Property(str, notify=modelChanged)
     def modelChange(self):
@@ -221,6 +95,103 @@ class MeshManager(QObject):
         if self._modelChange != path:
             self._modelChange = path
             self.modelChanged.emit(path)
+
+    @Property(QMatrix4x4, notify=matrixChanged)
+    def matrix(self):
+        return self._matrix
+
+    @Slot(QMatrix4x4)
+    def set_matrix(self):
+        m = self._matrixPython
+        m = np.dot(m, np.array([[1, 0, 0, 0], [0, 0, 1, 0], [
+                   0, -1, 0, 0], [0, 0, 0, 1]]))  # rotation x -90
+        m = m.flatten()
+        # print("matrix = ", m)
+        self._matrix = QMatrix4x4(m)
+        self.matrixChanged.emit(self._matrix)
+
+    @Slot(float)
+    def set_x(self, new_x):
+        new_x = round(new_x, 2)
+        if new_x != self._matrixPython[0][3]:
+            self._matrixPython[0][3] = new_x
+            self.set_matrix()
+            self.send.xLocationChangeSig.emit(new_x)
+
+    @Slot(float)
+    def set_y(self, new_y):
+        new_y = round(new_y, 2)
+        if new_y != self._matrixPython[2][3]:
+            self._matrixPython[2][3] = -new_y
+            self.set_matrix()
+            self.send.yLocationChangeSig.emit(new_y)
+
+    @Slot(float)
+    def set_z(self, new_z):
+        new_z = round(new_z, 1)
+        if new_z != self._matrixPython[1][3]:
+            self._matrixPython[1][3] = new_z
+            self.set_matrix()
+            self.send.zLocationChangeSig.emit(new_z)
+
+    @Slot(float)
+    def set_x_rot(self, angle):
+        sin = np.sin(np.deg2rad(angle))
+        cos = np.cos(np.deg2rad(angle))
+        transfor_arr = np.array([[1, 0, 0, self._origin[0]],
+                                 [0, 1, 0, self._origin[2]],
+                                 [0, 0, 1, -self._origin[1]],
+                                 [0, 0, 0, 1]])
+
+        rotation_arr = np.array([[1,   0,   0,  0],
+                                 [0, cos, -sin, 0],
+                                 [0, sin,  cos, 0],
+                                 [0,   0,   0,  1]])
+
+        transfor_back_arr = np.array([[1, 0, 0, -self._origin[0]],
+                                      [0, 1, 0, -self._origin[2]],
+                                      [0, 0, 1, self._origin[1]],
+                                      [0, 0, 0, 1]])
+        self._matrixPython = np.dot(self._matrixPython, transfor_arr)
+        self._matrixPython = np.dot(self._matrixPython, rotation_arr)
+        self._matrixPython = np.dot(self._matrixPython, transfor_back_arr)
+        self.set_matrix()
+        self.send.xRotationChangeSig.emit(angle)
+
+    @Slot(float)
+    def set_y_rot(self, angle):
+        sin = np.sin(np.deg2rad(angle))
+        cos = np.cos(np.deg2rad(angle))
+        transfor_arr = np.array([[1, 0, 0,  self._origin[0]],
+                                 [0, 1, 0,  self._origin[2]],
+                                 [0, 0, 1, -self._origin[1]],
+                                 [0, 0, 0, 1]])
+
+        rotation_arr = np.array([[cos,  0, sin,  0],
+                                 [0,    1,   0,  0],
+                                 [-sin, 0, cos,  0],
+                                 [0,    0,   0,  1]])
+
+        transfor_back_arr = np.array([[1, 0, 0, -self._origin[0]],
+                                      [0, 1, 0, -self._origin[2]],
+                                      [0, 0, 1,  self._origin[1]],
+                                      [0, 0, 0, 1]])
+        self._matrixPython = np.dot(self._matrixPython, transfor_arr)
+        self._matrixPython = np.dot(self._matrixPython, rotation_arr)
+        self._matrixPython = np.dot(self._matrixPython, transfor_back_arr)
+        self.set_matrix()
+        self.send.yRotationChangeSig.emit(angle)
+
+    @ Property(QVector3D, notify=originChanged)
+    def origin(self):
+        return QVector3D(self._origin[0], self._origin[1], self._origin[2])
+
+    def set_central_origin(self, x, y, z):
+        self._origin = [round(x, 2),
+                        round(y, 2),
+                        round(z, 2)]
+        self.originChanged.emit(
+            QVector3D(self._origin[0], self._origin[1], self._origin[2]))
 
     def set_model_on_center(self, min, max):
         x = (min[0] + max[0]) / 2
@@ -254,11 +225,11 @@ class BedManager(QObject):
         self._xBed = float(settings.printerSettings['bed_size_x'])
         self._yBed = float(settings.printerSettings['bed_size_x'])
 
-    @Property(float, notify=xBedChanged)
+    @ Property(float, notify=xBedChanged)
     def xBed(self):
         return self._xBed
 
-    @Property(float, notify=yBedChanged)
+    @ Property(float, notify=yBedChanged)
     def yBed(self):
         return self._yBed
 
@@ -335,7 +306,7 @@ class Model3dWidget(QQuickWidget):
         contr.addSend("3d/model/name", self.modelChangeNameSig)
 
         self.setAcceptDrops(True)
-        provider = MeshManager()
+        provider = TransformationMatrixManager()
         bed = BedManager()
         self.engine().rootContext().setContextProperty(
             "_renderCaptureProvider", pyobject)
