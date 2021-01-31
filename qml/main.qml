@@ -6,15 +6,17 @@ import QtQuick.Controls 2.15
 
 Item {
     id: mainview
-    width: 500
+    width: 550
     height: 500
-    visible: true
+    //visible: true
     //anchors.fill: parent
     property bool move : false
+    property bool rotation : false
+    property bool lay : false
     //![1]
     Scene3D {
         id: scene3d
-        multisample: true
+        //multisample: true
         hoverEnabled: true
         //anchors.fill: parent
         width: parent.width
@@ -33,25 +35,67 @@ Item {
         id: object2d
         color: "#33000000"
 
-        width: 500
+        width: 450
         height: 50
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottomMargin: 0
-        Button{
-            icon.source: "../icons/move.png"
+
+        Row {
+            spacing: 10
             anchors.top: parent.top
-            display: AbstractButton.IconOnly
             anchors.bottom: parent.bottom
-            onClicked: {
-                if(mainview.move)
-                    mainview.move = false
-                else
-                    mainview.move = true
-                console.log(mainview.move)
+            anchors.horizontalCenter: parent.horizontalCenter
+            ToolbarButton{
+                id: buttonMove
+                source: "../icons/move.png"
+                onClicked: {
+                    if(mainview.move)
+                    {
+                        mainview.move = false
+                        buttonMove.color = "black"
+                    }
+                    else
+                    {
+                        mainview.move = true
+                        buttonMove.color = "#007bd9"
+                    }
+                }
+            }
+            
+            ToolbarButton{
+                id: buttonRotate
+                source: "../icons/rotation.png"
+                onClicked: {
+                    if(mainview.move)
+                    {
+                        mainview.move = false
+                        buttonRotate.color = "black"
+                    }
+                    else
+                    {
+                        mainview.move = true
+                        buttonRotate.color = "#007bd9"
+                    }
+                }
+            }
+
+            ToolbarButton{
+                id: buttonCenter
+                source : "../icons/center.png"
+                onClicked: {
+                    scene.center_on_bed()
+                }
+            }
+
+            ToolbarButton{
+                id: buttonLayOnBed
+                source : "../icons/lay.png"
+                onClicked: {
+                    scene.set_on_bed()
+                }
             }
         }
-
         layer.enabled: true
     }
 

@@ -162,7 +162,11 @@ Entity {
         // cancel rotation component of parent's (target) transform
         var t = targetTransform.matrix
         var i = t.inverted()
-        i = i.times(Qt.matrix4x4(1,0,0,t.m14+r_manager.origin.x,0,0,1,t.m24+r_manager.origin.z,0,-1,0,t.m34-r_manager.origin.y,0,0,0,1))
+        i = i.times(Qt.matrix4x4(1,0,0,t.m14+r_manager.origin.x,
+                                 0,0,1,t.m24+r_manager.origin.z,
+                                 0,-1,0,t.m34-r_manager.origin.y,
+                                 0,0,0,1))
+        //i = i.times(Qt.matrix4x4()
         ownTransform.matrix = i
 
         updateAbsolutePosition()

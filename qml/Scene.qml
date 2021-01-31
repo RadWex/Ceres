@@ -53,9 +53,10 @@ Entity {
             aspectRatio: 16 / 9
             nearPlane: 0.1
             farPlane: 2000.0
-            position: Qt.vector3d(100.0, 300.0, 300.0)
+            position: cameraManager.position
             //upVector: Qt.vector3d(-100.0, 0.0, -100.0)
-            viewCenter: Qt.vector3d(100.0, 0.0, -100.0)
+            viewCenter: cameraManager.view
+            //onPositionChanged: { console.log(camera.viewMatrix)}
         }
 
         Camera {
@@ -64,12 +65,13 @@ Entity {
 
             nearPlane: 0.1
             farPlane: 1000.0
-            left: -200/1.9
-            right: 200/1.9
-            bottom: -200/1.9
-            top: 200/1.9
+            left: -window_manager.xBed/2
+            right: window_manager.xBed/2
+            bottom: -window_manager.yBed/2
+            top: window_manager.yBed/2
             position: Qt.vector3d(100.0, 100.0, -100.0)
             //upVector: Qt.vector3d(0.0, 1.0, 0.0)
+            
             viewCenter: Qt.vector3d(100.0, 0.0, -100.0)
         }
     }
@@ -115,7 +117,14 @@ Entity {
                 console.log("dzoala")}
     */
 
+    function set_on_bed(){
+        r_manager.set_z(-r_manager.bottomLeftOrigin.z)
+    }
 
+    function center_on_bed(){
+        r_manager.set_x(window_manager.xBed/2-r_manager.origin.x)
+        r_manager.set_y(window_manager.yBed/2-r_manager.origin.y)
+    }
 
         //Component.onCompleted: {doRenderCapture()}//do poprawy
         PhongMaterial {
@@ -188,39 +197,6 @@ Entity {
                 tg.attachTo(model)
             else
                 tg.detach()
-        }
-        Entity {
-            PhongMaterial {
-                id: mat
-                diffuse: "red"
-            }
-            CylinderMesh {
-                id: mod
-                length: 30
-                radius: 30
-                slices: 3
-
-            }
-            Transform {
-                id: tran
-                translation.x: 100
-                translation.y: 0
-                translation.z: -100
-            }
-            //components: move ? [mod, mat, tran] : []
-            /*Component.onCompleted: {
-                mod.geometry.positionAttribute.buffer.setSyncData(true)
-                var vertexArray = new Float32Array(100);
-                //console.log(mod.geometry.positionAttribute.byteStride)
-                mod.geometry.positionAttribute.buffer.setUsage(Buffer.StreamRead)
-                mod.geometry.positionAttribute.buffer.setAccessType(Buffer.Read)
-                if(mod.geometry.positionAttribute.buffer.type == Buffer.VertexBuffer)
-                    var triCount = mod.geometry.positionAttribute.byteStride
-                    console.log(triCount)
-
-
-                console.log(mod.geometry.positionAttribute.buffer.data().detach())
-            }*/
         }
 
         GridEntity {

@@ -6,6 +6,7 @@ from PySide2.QtWidgets import (QMainWindow, QStatusBar,
                                QGroupBox, QComboBox,
                                QDesktopWidget)
 from PySide2.QtCore import Qt, Signal
+from PySide2.QtGui import QKeySequence
 from TabsContainer import TabContainerWidget
 from SettingsWindow import SettingsWindow
 from Viewer3d import Model3dWidget
@@ -19,7 +20,7 @@ class MainWidget(QWidget):
     def __init__(self):
         super().__init__()
         contr = Controller()
-        contr.addSend("2d/opacity", self.opacityChangeSig)
+        contr.addSend("2d/image/opacity", self.opacityChangeSig)
 
         self.setAcceptDrops(True)
 
@@ -27,10 +28,12 @@ class MainWidget(QWidget):
         mainWidgetsLayout.addWidget(ImageWidget())
         mainWidgetsLayout.addWidget(Model3dWidget())
         mainWidgetsLayout.addWidget(TabContainerWidget())
+        groupbox = QGroupBox(self)
+        groupbox.setLayout(mainWidgetsLayout)
 
         layout = QVBoxLayout()
-        layout.addWidget(self.initTopBar())
-        layout.addLayout(mainWidgetsLayout)
+        layout.addLayout(self.initTopBar())
+        layout.addWidget(groupbox)
         self.setLayout(layout)
 
     def initTopBar(self):
@@ -42,16 +45,16 @@ class MainWidget(QWidget):
         layout.addWidget(QLabel("Template:"))
         layout.addWidget(self.initEngravingProfileComboBox())
         layout.addStretch(1)
-        groupbox = QGroupBox(self)
-        groupbox.setLayout(layout)
-        return groupbox
+        #groupbox = QGroupBox(self)
+        # groupbox.setLayout(layout)
+        return layout
 
     # slider
     def initSlider(self):
         slider = QSlider(Qt.Horizontal)
         slider.setMinimum(0)
         slider.setMaximum(100)
-        slider.setValue(100)
+        slider.setValue(50)
         # slider.setMaximumWidth(20)
         slider.valueChanged.connect(self.opacityChange)
 
@@ -82,12 +85,30 @@ class MainWidget(QWidget):
 class MainWindow(QMainWindow):
     modelChangePathSig = Signal(str)
     modelChangeNameSig = Signal(str)
+    imageChangePathSig = Signal(str)
+    imageChangeNameSig = Signal(str)
+    homeViewSig = Signal()
+    topViewSig = Signal()
+    bottomViewSig = Signal()
+    frontViewSig = Signal()
+    backViewSig = Signal()
+    leftViewSig = Signal()
+    rightViewSig = Signal()
 
     def __init__(self):
         super().__init__()
         contr = Controller()
         contr.addSend("3d/model/path", self.modelChangePathSig)
         contr.addSend("3d/model/name", self.modelChangeNameSig)
+        contr.addSend("3d/camera/position/home", self.homeViewSig)
+        contr.addSend("3d/camera/position/top", self.topViewSig)
+        contr.addSend("3d/camera/position/bottom", self.bottomViewSig)
+        contr.addSend("3d/camera/position/front", self.frontViewSig)
+        contr.addSend("3d/camera/position/back", self.backViewSig)
+        contr.addSend("3d/camera/position/left", self.leftViewSig)
+        contr.addSend("3d/camera/position/right", self.rightViewSig)
+        contr.addSend("2d/image/path", self.imageChangePathSig)
+        contr.addSend("2d/image/name", self.imageChangeNameSig)
 
         self.initialize_menu_bar()
         self.setWindowTitle("Ceres")
@@ -120,11 +141,43 @@ class MainWindow(QMainWindow):
         exitAction = QAction("Quit", self)
         exitAction.triggered.connect(qApp.quit)
 
-        settingsOpenAction = QAction("Printer settings", self)
-        settingsOpenAction.triggered.connect(self.openSettingsWindow)
-        edit_menu.addAction(settingsOpenAction)
         file_menu.addAction(fileOpenAction)
         file_menu.addAction(exitAction)
+
+        settingsOpenAction = QAction("Printer settings", self)
+        settingsOpenAction.triggered.connect(self.openSettingsWindow)
+
+        edit_menu.addAction(settingsOpenAction)
+
+        homeView = QAction("Home", self)
+        homeView.setShortcut(QKeySequence("0"))
+        homeView.triggered.connect(self.homeViewSig.emit)
+        topView = QAction("Top", self)
+        topView.setShortcut(QKeySequence("1"))
+        topView.triggered.connect(self.topViewSig.emit)
+        bottomView = QAction("Bottom", self)
+        bottomView.setShortcut(QKeySequence("2"))
+        bottomView.triggered.connect(self.bottomViewSig.emit)
+        frontView = QAction("Front", self)
+        frontView.setShortcut(QKeySequence("3"))
+        frontView.triggered.connect(self.frontViewSig.emit)
+        backView = QAction("Back", self)
+        backView.setShortcut(QKeySequence("4"))
+        backView.triggered.connect(self.backViewSig.emit)
+        leftView = QAction("Left", self)
+        leftView.setShortcut(QKeySequence("5"))
+        leftView.triggered.connect(self.leftViewSig.emit)
+        rightView = QAction("Right", self)
+        rightView.setShortcut(QKeySequence("6"))
+        rightView.triggered.connect(self.rightViewSig.emit)
+
+        view_menu.addAction(homeView)
+        view_menu.addAction(topView)
+        view_menu.addAction(bottomView)
+        view_menu.addAction(frontView)
+        view_menu.addAction(backView)
+        view_menu.addAction(leftView)
+        view_menu.addAction(rightView)
 
     def getfile(self):
         fname, tmp = QFileDialog.getOpenFileName(self, 'Open file',
@@ -149,5 +202,13 @@ class MainWindow(QMainWindow):
         urls = event.mimeData().urls()
         fname = urls[0].toLocalFile()
         tmp = fname.rsplit('/', 1)
-        self.modelChangeNameSig.emit(tmp[-1])
-        self.modelChangePathSig.emit("file:///"+fname)
+        name = tmp[-1]
+        tmp = name.rsplit('.', 1)
+        extension = tmp[-1].lower()
+        supportedModelExtensions = ['obj', 'stl', 'ply']
+        if any(extension in s for s in supportedModelExtensions):
+            self.modelChangeNameSig.emit(name)
+            self.modelChangePathSig.emit("file:///"+fname)
+        else:
+            self.imageChangeNameSig.emit(name)
+            self.imageChangePathSig.emit(fname)

@@ -22,13 +22,13 @@ RenderSettings {
                     clearColor: Qt.rgba(0.6, 0.6, 0.6, 1.0)
                     NoDraw {}
                 }
-                LayerFilter {
-                    filterMode: LayerFilter.AcceptAnyMatchingLayers
-                    layers: [modelLayer, lightLayer]
+                //LayerFilter {
+                //    filterMode: LayerFilter.AcceptAnyMatchingLayers
+                //    layers: [modelLayer, lightLayer]
                     RenderCapture {
                         id:renderCapture
                     }
-                }
+                //}
             }
             
         }

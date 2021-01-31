@@ -57,6 +57,7 @@ class TransformationMatrixManager(QObject):
     modelChanged = Signal(str)
     matrixChanged = Signal(QMatrix4x4)
     originChanged = Signal(QVector3D)
+    bottomLeftOriginChanged = Signal(QVector3D)
 
     def __init__(self, parent=None):
         super(TransformationMatrixManager, self).__init__(parent)
@@ -80,6 +81,7 @@ class TransformationMatrixManager(QObject):
             1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
         self._matrixPython = np.identity(4, dtype=np.float32)
         self._origin = [0, 0, 0]
+        self._bottomLeftOrigin = [0, 0, 0, 0, 0, 0]
         self.loadSettings()
 
     def loadSettings(self):
@@ -128,7 +130,7 @@ class TransformationMatrixManager(QObject):
 
     @Slot(float)
     def set_z(self, new_z):
-        new_z = round(new_z, 1)
+        new_z = round(new_z, 2)
         if new_z != self._matrixPython[1][3]:
             self._matrixPython[1][3] = new_z
             self.set_matrix()
@@ -186,12 +188,23 @@ class TransformationMatrixManager(QObject):
     def origin(self):
         return QVector3D(self._origin[0], self._origin[1], self._origin[2])
 
+    @ Property(QVector3D, notify=bottomLeftOriginChanged)
+    def bottomLeftOrigin(self):
+        return QVector3D(self._bottomLeftOrigin[0], self._bottomLeftOrigin[1], self._bottomLeftOrigin[2])
+
     def set_central_origin(self, x, y, z):
         self._origin = [round(x, 2),
                         round(y, 2),
                         round(z, 2)]
         self.originChanged.emit(
             QVector3D(self._origin[0], self._origin[1], self._origin[2]))
+
+    def set_bottomLeft_origin(self, x, y, z):
+        self._bottomLeftOrigin = [round(x, 2),
+                                  round(y, 2),
+                                  round(z, 2)]
+        self.bottomLeftOriginChanged.emit(
+            QVector3D(self._bottomLeftOrigin[0], self._bottomLeftOrigin[1], self._bottomLeftOrigin[2]))
 
     def set_model_on_center(self, min, max):
         x = (min[0] + max[0]) / 2
@@ -205,6 +218,7 @@ class TransformationMatrixManager(QObject):
         self.set_z(new_z)
         self.send.sendOrigin(min[0], min[1], min[2])
         self.set_central_origin(x, y, z)
+        self.set_bottomLeft_origin(min[0], min[1], min[2])
         self.send.sendLocations(new_x, new_y, new_z)
 
 
@@ -295,15 +309,50 @@ class MeshUtils(QObject):
 pyobject = MeshUtils()
 
 
+class CameraManager(QObject):
+    positionVectorChangeSig = Signal(QVector3D)
+    viewVectorChangeSig = Signal(QVector3D)
+
+    def __init__(self, parent=None):
+        super(CameraManager, self).__init__(parent)
+        contr = Controller()
+        contr.addRecive("3d/camera/position/top", self.set_camera_top)
+        contr.addRecive("3d/camera/position/home", self.set_camera_home)
+        self._position = QVector3D(100.0, 300.0, 300.0)
+        self._view = QVector3D(100.0, 0.0, -100.0)
+
+    @Property(QVector3D, notify=positionVectorChangeSig)
+    def position(self):
+        return self._position
+
+    @Property(QVector3D, notify=viewVectorChangeSig)
+    def view(self):
+        return self._view
+
+    def set_camera_home(self):
+        p = QVector3D(100.0, 300.0, 300.0)
+        self._position = p
+        self.positionVectorChangeSig.emit(p)
+
+    def set_camera_top(self):
+        p = QVector3D(100.0, 500.0, -100.0)
+        self._position = p
+        self.positionVectorChangeSig.emit(p)
+
+
 class Model3dWidget(QQuickWidget):
     modelChangePathSig = Signal(str)
     modelChangeNameSig = Signal(str)
+    imageChangePathSig = Signal(str)
+    imageChangeNameSig = Signal(str)
 
     def __init__(self):
         super().__init__()
         contr = Controller()
         contr.addSend("3d/model/path", self.modelChangePathSig)
         contr.addSend("3d/model/name", self.modelChangeNameSig)
+        contr.addSend("2d/image/path", self.imageChangePathSig)
+        contr.addSend("2d/image/name", self.imageChangeNameSig)
 
         self.setAcceptDrops(True)
         provider = TransformationMatrixManager()
@@ -312,9 +361,11 @@ class Model3dWidget(QQuickWidget):
             "_renderCaptureProvider", pyobject)
         self.engine().rootContext().setContextProperty("r_manager", provider)
         self.engine().rootContext().setContextProperty("window_manager", bed)
+        self.engine().rootContext().setContextProperty("cameraManager", CameraManager())
         self.setSource(QUrl.fromLocalFile("qml/main.qml"))
-        # self.setResizeMode(QQuickWidget.SizeRootObjectToView)
+        self.setResizeMode(QQuickWidget.SizeRootObjectToView)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        print("QQuickWidget size ->", self.size())
 
     def dragMoveEvent(self, e):
         e.acceptProposedAction()
@@ -329,5 +380,14 @@ class Model3dWidget(QQuickWidget):
         urls = event.mimeData().urls()
         fname = urls[0].toLocalFile()
         tmp = fname.rsplit('/', 1)
-        self.modelChangeNameSig.emit(tmp[-1])
-        self.modelChangePathSig.emit("file:///"+fname)
+        name = tmp[-1]
+        tmp = name.rsplit('.', 1)
+        extension = tmp[-1].lower()
+        supportedModelExtensions = ['obj', 'stl', 'ply']
+        if any(extension in s for s in supportedModelExtensions):
+            self.modelChangeNameSig.emit(name)
+            self.modelChangePathSig.emit("file:///"+fname)
+        else:
+            self.imageChangeNameSig.emit(name)
+            self.imageChangePathSig.emit(fname)
+

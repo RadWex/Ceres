@@ -20,7 +20,7 @@ Entity {
         var ammountOfLinesY = size_y/spacing + 1;
 
         var vertexArray = new Float32Array((3 * ammountOfLinesX * 2) + (3 * ammountOfLinesY * 2)+6);
-        console.log(vertexArray.length)
+        //console.log(vertexArray.length)
         ver_count = vertexArray.length
         var j = 0;
 

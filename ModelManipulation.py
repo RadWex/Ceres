@@ -1,7 +1,8 @@
 from PySide2.QtWidgets import (QWidget, QGridLayout,
                                QGroupBox, QVBoxLayout,
                                QLayout, QLabel,
-                               QLineEdit, QHBoxLayout)
+                               QLineEdit, QHBoxLayout,
+                               QSizePolicy)
 from PySide2.QtGui import QDoubleValidator
 from PySide2.QtCore import Qt, Signal
 from Controller import Controller
@@ -71,11 +72,16 @@ class ModelManipulation(QWidget):
         grid.setSizeConstraint(QLayout.SetMinimumSize)
 
         xLabel = QLabel("X")
-        xLabel.setAlignment(Qt.AlignVCenter)
+        xLabel.setAlignment(Qt.AlignCenter)
         grid.addWidget(xLabel, 0, 1)
 
-        grid.addWidget(QLabel("Y"), 0, 2)
-        grid.addWidget(QLabel("Z"), 0, 3)
+        yLabel = QLabel("Y")
+        yLabel.setAlignment(Qt.AlignCenter)
+        grid.addWidget(yLabel, 0, 2)
+
+        zLabel = QLabel("Z")
+        zLabel.setAlignment(Qt.AlignCenter)
+        grid.addWidget(zLabel, 0, 3)
 
         self.initLocationFields(grid, 1)
         self.initRotationFields(grid, 2)
