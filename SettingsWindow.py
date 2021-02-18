@@ -63,7 +63,7 @@ class SettingsWindow(QWidget):
         con = settings.printerSettings
 
         grid = QGridLayout()
-        grid.addWidget(QLabel("Size:"), 0, 0)
+        grid.addWidget(QLabel("Bed Size:"), 0, 0)
         grid.addWidget(QLabel("x:"), 0, 2)
         self.bedSizeX = QDoubleSpinBox()
         self.bedSizeX.setRange(0, 99999)
@@ -93,7 +93,7 @@ class SettingsWindow(QWidget):
         grid.addWidget(self.originY, 3, 3)
         grid.addWidget(QLabel("mm"), 3, 4)
 
-        grid.setColumnStretch(4, 1)
+        grid.setColumnStretch(1, 1)
 
         groupbox = QGroupBox("Printer Settings")
         groupbox.setLayout(grid)
@@ -109,23 +109,26 @@ class SettingsWindow(QWidget):
         bedSizeX.setRange(0, 99999)
         bedSizeX.setValue(float(con['w']))
         grid.addWidget(bedSizeX, 0, 1)
+        grid.addWidget(QLabel("mm"), 0, 2)
 
         grid.addWidget(QLabel("(H) Height for laser focus:"), 1, 0)
         bedSizeY = QDoubleSpinBox()
         bedSizeY.setRange(0, 99999)
         bedSizeY.setValue(float(con['h']))
         grid.addWidget(bedSizeY, 1, 1)
+        grid.addWidget(QLabel("mm"), 1, 2)
 
         grid.addWidget(QLabel("D:"), 2, 0)
         bedSizeZ = QDoubleSpinBox()
         bedSizeZ.setRange(0, 99999)
         bedSizeZ.setValue(float(con['d']))
         grid.addWidget(bedSizeZ, 2, 1)
+        grid.addWidget(QLabel("mm"), 2, 2)
 
         groupbox = QGroupBox("Laser Settings")
         groupbox.setLayout(grid)
         grid.setRowStretch(3, 1)
-        grid.setColumnStretch(2, 1)
+        grid.setColumnStretch(3, 1)
         return groupbox
 
     def initBottomButtons(self):

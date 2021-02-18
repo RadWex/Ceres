@@ -5,12 +5,12 @@ import Qt3D.Extras 2.0
 
 Entity {
     id: root
-
+    property Layer layer
     property int sizeX : 200
     property int sizeY : 200
     //property int length: 1
 
-    components: [ mesh, material ]
+    components: [ mesh, material, layer]
 
     property var ver_count: 0
     function buildVertexBufferData(size_x, size_y) {

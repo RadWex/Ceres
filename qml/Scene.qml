@@ -200,9 +200,13 @@ Entity {
         }
 
         GridEntity {
+            Layer {
+                id: gridLayer
+            }
             id: raydisplay
             sizeX: window_manager.xBed
             sizeY: window_manager.yBed
+            layer: gridLayer
         }
         AxisEntity {
             length: 20

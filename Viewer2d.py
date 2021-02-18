@@ -1,5 +1,5 @@
-from PySide2.QtWidgets import QGraphicsView, QPushButton, QVBoxLayout, QHBoxLayout, QGraphicsScene, QApplication, QLabel, QWidget, QAction, QGridLayout
-from PySide2.QtGui import QPixmap, QPainter, QIcon, QKeySequence
+from PySide2.QtWidgets import QGraphicsView, QGraphicsItem, QPushButton, QVBoxLayout, QHBoxLayout, QGraphicsScene, QApplication, QLabel, QWidget, QAction, QGridLayout
+from PySide2.QtGui import QPixmap, QPainter, QIcon, QKeySequence, QBrush, QColor
 from PySide2.QtCore import Qt, Signal, QSize, QRect, Slot
 from PIL.ImageQt import ImageQt
 from PIL import Image
@@ -73,7 +73,7 @@ class RulerWidget(QWidget):
     def _drawTickLabel(self, painter, tick, pos):
         label = str(tick)
         tick = (550*tick)//200
-        
+
         if self.orientation == Qt.Horizontal:
             if self.inv:
                 tick = self.size().width() - tick - 1
@@ -201,8 +201,15 @@ class RulerWindow(RulerWidget):
 
 
 class ImageWidget(QWidget):
+    opacityChangeSig = Signal(int)
+    activeToolSig = Signal(str)
+
     def __init__(self):
         super().__init__()
+        contr = Controller()
+        contr.addSend("2d/image/opacity", self.opacityChangeSig)
+        contr.addSend("2d/tool", self.activeToolSig)
+
         buttonSize = QSize(40, 40)
         iconSize = QSize(32, 32)
 
@@ -210,27 +217,87 @@ class ImageWidget(QWidget):
         freeButton.setIcon(QIcon("icons/2d_free.png"))
         freeButton.setFixedSize(buttonSize)
         freeButton.setIconSize(iconSize)
+        freeButton.setCheckable(True)
+        freeButton.setChecked(True)
+        freeButton.clicked.connect(self.freeButtonActive)
 
         moveButton = QPushButton()
         moveButton.setIcon(QIcon("icons/2d_move.png"))
         moveButton.setFixedSize(buttonSize)
         moveButton.setIconSize(iconSize)
+        moveButton.setCheckable(True)
+        moveButton.clicked.connect(self.moveButtonActive)
 
         rotationButton = QPushButton()
         rotationButton.setIcon(QIcon("icons/2d_rotate.png"))
         rotationButton.setFixedSize(buttonSize)
         rotationButton.setIconSize(iconSize)
+        rotationButton.setCheckable(True)
+        rotationButton.clicked.connect(self.rotationButtonActive)
+
+        scaleButton = QPushButton()
+        scaleButton.setIcon(QIcon("icons/2d_scale.png"))
+        scaleButton.setFixedSize(buttonSize)
+        scaleButton.setIconSize(iconSize)
+        scaleButton.setCheckable(True)
+        scaleButton.clicked.connect(self.scaleButtonActive)
+
+        hideButton = QPushButton()
+        hideButton.setIcon(QIcon("icons/2d_hide.png"))
+        hideButton.setFixedSize(buttonSize)
+        hideButton.setIconSize(iconSize)
+        hideButton.setCheckable(True)
+        hideButton.clicked.connect(self.hideButtonActive)
+        hideButton.setShortcut(QKeySequence('h'))
+        hideButton.setToolTip('Hide (H)')
+
+        self.toolButtons = [freeButton, moveButton,
+                            rotationButton, scaleButton]
 
         buttonLayout = QVBoxLayout()
         buttonLayout.addWidget(freeButton)
         buttonLayout.addWidget(moveButton)
         buttonLayout.addWidget(rotationButton)
+        buttonLayout.addWidget(scaleButton)
         buttonLayout.addStretch()
+        buttonLayout.addWidget(hideButton)
         mainLayout = QHBoxLayout()
         mainLayout.addLayout(buttonLayout)
         mainLayout.addWidget(Container())
         mainLayout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(mainLayout)
+
+    def freeButtonActive(self):
+        for i in self.toolButtons:
+            i.setChecked(False)
+        self.sender().setChecked(True)
+        self.activeToolSig.emit("free")
+
+    def moveButtonActive(self):
+        for i in self.toolButtons:
+            i.setChecked(False)
+        self.sender().setChecked(True)
+        self.activeToolSig.emit("move")
+
+    def rotationButtonActive(self):
+        for i in self.toolButtons:
+            i.setChecked(False)
+        self.sender().setChecked(True)
+        self.activeToolSig.emit("rotation")
+
+    def scaleButtonActive(self):
+        for i in self.toolButtons:
+            i.setChecked(False)
+        self.sender().setChecked(True)
+        self.activeToolSig.emit("scale")
+
+    def hideButtonActive(self):
+        if self.sender().isChecked():
+            self.opacityChangeSig.emit(0)
+            self.sender().setChecked(True)
+        else:
+            self.opacityChangeSig.emit(100)
+            self.sender().setChecked(False)
 
 
 class Container(QWidget):
@@ -260,12 +327,16 @@ class Image2dView(QGraphicsView):
     modelChangeNameSig = Signal(str)
     imageChangePathSig = Signal(str)
     imageChangeNameSig = Signal(str)
+    imageChangeSig = Signal(QPixmap)
 
     def __init__(self):
         super().__init__()
         contr = Controller()
         contr.addRecive('2d/image/opacity', self.setOpacity)
         contr.addRecive('2d/image/path', self.openImage)
+        contr.addRecive("2d/tool", self.setTool)
+        contr.addRecive("2d/image/off", self.updateImage)
+        contr.addSend("2d/image", self.imageChangeSig)
         contr.addSend("3d/model/path", self.modelChangePathSig)
         contr.addSend("3d/model/name", self.modelChangeNameSig)
         #contr.addSend("2d/image/path", self.imageChangePathSig)
@@ -280,14 +351,20 @@ class Image2dView(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
+        self.tool = None
+
         self.scene = QGraphicsScene()
         self.scene.setSceneRect(0, 0, 550, 550)
-        self.setAlignment(Qt.AlignBottom|Qt.AlignLeft)
+        print(self.size())
+        self.setAlignment(Qt.AlignBottom | Qt.AlignLeft)
 
         self.render = self.scene.addPixmap(QPixmap())
         self.texture = self.scene.addPixmap(QPixmap())
         self.setScene(self.scene)
 
+    def drawBackground(self, painter, rect):
+        background_brush = QBrush(QColor(153, 153, 153), Qt.SolidPattern)
+        painter.fillRect(rect, background_brush)
 
     def wheelEvent(self, event):
         if event.angleDelta().y() > 0:
@@ -301,10 +378,14 @@ class Image2dView(QGraphicsView):
     def addCameraImage(self, image):
         if image.size().width() == 0:
             return
-        print("render size ->", image.size())
-        image = image.scaled ( 550, 550, Qt.IgnoreAspectRatio, Qt.FastTransformation )
+        #print("render size ->", image.size())
+        image = image.scaled(
+            550, 550, Qt.IgnoreAspectRatio, Qt.FastTransformation)
         self.render.setPixmap(image)
-        
+        self.scene.update()
+
+    def updateImage(self, image):
+        self.texture.setPixmap(image)
         self.scene.update()
 
     def openImage(self, image):
@@ -316,9 +397,22 @@ class Image2dView(QGraphicsView):
         self.texture.setPos(0, 550-pixmap.height())
         self.texture.setZValue(1)
         self.texture.setOpacity(.5)
+        if self.tool == 'move':
+            self.texture.setFlag(QGraphicsItem.ItemIsMovable, True)
+            self.texture.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        self.imageChangeSig.emit(pixmap)
 
     def setOpacity(self, value):
         self.texture.setOpacity(value)
+
+    def setTool(self, tool):
+        if tool == 'move':
+            self.texture.setFlag(QGraphicsItem.ItemIsMovable, True)
+            self.texture.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        else:
+            self.texture.setFlag(QGraphicsItem.ItemIsMovable, False)
+            self.texture.setFlag(QGraphicsItem.ItemIsSelectable, False)
+        self.tool = tool
 
     def dragMoveEvent(self, e):
         e.acceptProposedAction()
@@ -343,4 +437,4 @@ class Image2dView(QGraphicsView):
         else:
             self.imageChangeNameSig.emit(name)
             self.openImage(fname)
-            #self.imageChangePathSig.emit("file:///"+fname)
+            # self.imageChangePathSig.emit("file:///"+fname)

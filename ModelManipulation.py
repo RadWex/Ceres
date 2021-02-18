@@ -1,16 +1,15 @@
-from PySide2.QtWidgets import (QWidget, QGridLayout,
-                               QGroupBox, QVBoxLayout,
-                               QLayout, QLabel,
-                               QLineEdit, QHBoxLayout,
-                               QSizePolicy)
+from PySide2.QtWidgets import (QWidget, QGridLayout, QGroupBox,
+                               QVBoxLayout, QLayout, QLabel,
+                               QLineEdit, QHBoxLayout, QPushButton,
+                               QFileDialog)
 from PySide2.QtGui import QDoubleValidator
 from PySide2.QtCore import Qt, Signal
 from Controller import Controller
 
-provider = None
-
 
 class ModelManipulation(QWidget):
+    modelChangePathSig = Signal(str)
+    modelChangeNameSig = Signal(str)
     xLocationChangeSig = Signal(float)
     yLocationChangeSig = Signal(float)
     zLocationChangeSig = Signal(float)
@@ -51,12 +50,40 @@ class ModelManipulation(QWidget):
         contr.addSend("3d/model/scale/y", self.yScaleChangeSig)
         contr.addSend("3d/model/scale/z", self.zScaleChangeSig)
 
+        contr.addSend("3d/model/path", self.modelChangePathSig)
+        contr.addSend("3d/model/name", self.modelChangeNameSig)
+
+        self.modelNotLoadedWidget = self.initModelNotLoadedWidget()
+        self.modelLoadedWidget = self.initMainWidget()
+        self.modelLoadedWidget.setVisible(False)
+
         mainLayout = QVBoxLayout()
-        mainLayout.addWidget(self.initModelNameSection())
-        mainLayout.addWidget(self.initModelManipulationSection())
-        mainLayout.addWidget(self.initModelInfoSection())
+        mainLayout.addWidget(self.modelNotLoadedWidget)
+        mainLayout.addWidget(self.modelLoadedWidget)
         mainLayout.addStretch(1)
         self.setLayout(mainLayout)
+
+    def initMainWidget(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.addWidget(self.initModelNameSection())
+        layout.addWidget(self.initModelManipulationSection())
+        layout.addWidget(self.initModelInfoSection())
+        layout.addStretch(1)
+        layout.setContentsMargins(0, 0, 0, 0)
+        widget.setLayout(layout)
+        return widget
+
+    def initModelNotLoadedWidget(self):
+        widget = QWidget()
+
+        button = QPushButton('Open Model')
+        button.clicked.connect(self.getfile)
+        layout = QVBoxLayout()
+        layout.addWidget(button)
+
+        widget.setLayout(layout)
+        return widget
 
     def initModelNameSection(self):
         layout = QHBoxLayout()
@@ -180,6 +207,8 @@ class ModelManipulation(QWidget):
     # set const functions
     def set_model_name(self, message):
         self.name.setText(message)
+        self.modelNotLoadedWidget.hide()
+        self.modelLoadedWidget.show()
 
     def set_model_count(self, tris):
         self.infoTris.setText(str(tris))
@@ -278,3 +307,12 @@ class ModelManipulation(QWidget):
         self.z_scale_input.setText("{:.2f}".format(value))
         new_dimension = (self.dimension[2] * (value/100))
         self.z_demension_input.setText("{:.2f}".format(new_dimension))
+
+    def getfile(self):
+        fname, tmp = QFileDialog.getOpenFileName(self, 'Open file',
+                                                 '', "Model files (*.obj *.stl *.ply)")
+        tmp = fname.rsplit('/', 1)
+        self.modelChangeNameSig.emit(tmp[-1])
+        self.modelChangePathSig.emit("file:///"+fname)
+        # TODO
+        #self.statusBar.showMessage("Model loaded")

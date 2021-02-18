@@ -136,18 +136,24 @@ class MainWindow(QMainWindow):
         edit_menu = menu_bar.addMenu("&Edit")
         view_menu = menu_bar.addMenu("&View")
 
-        fileOpenAction = QAction("Open", self)
-        fileOpenAction.triggered.connect(self.getfile)
+        openImageAction = QAction("Open image", self)
+
+        importModelAction = QAction("Import model...", self)
+        importModelAction.triggered.connect(self.getfile)
         exitAction = QAction("Quit", self)
         exitAction.triggered.connect(qApp.quit)
 
-        file_menu.addAction(fileOpenAction)
+        file_menu.addAction(openImageAction)
+        file_menu.addAction(importModelAction)
         file_menu.addAction(exitAction)
 
         settingsOpenAction = QAction("Printer settings", self)
         settingsOpenAction.triggered.connect(self.openSettingsWindow)
 
+        preferencesOpenAction = QAction("Preferences...", self)
+
         edit_menu.addAction(settingsOpenAction)
+        edit_menu.addAction(preferencesOpenAction)
 
         homeView = QAction("Home", self)
         homeView.setShortcut(QKeySequence("0"))
