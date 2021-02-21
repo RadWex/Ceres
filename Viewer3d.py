@@ -69,18 +69,20 @@ class TransformationMatrixManager(QObject):
         contr.addRecive("3d/model/location/z", self.set_z)
         contr.addRecive("3d/model/rotation/x", self.set_x_rot)
         contr.addRecive("3d/model/rotation/y", self.set_y_rot)
-        # contr.addRecive("3d/model/rotation/z", self.set_z_rot)
-        # contr.addRecive("3d/model/scale/x", self.set_x_scale)
-        # contr.addRecive("3d/model/scale/y", self.set_y_scale)
-        # contr.addRecive("3d/model/scale/z", self.set_z_scale)
+        contr.addRecive("3d/model/rotation/z", self.set_z_rot)
+        contr.addRecive("3d/model/scale/x", self.set_x_scale)
+        contr.addRecive("3d/model/scale/y", self.set_y_scale)
+        contr.addRecive("3d/model/scale/z", self.set_z_scale)
         self.send = ToModelManipulation()
         self.bedX = 0
         self.bedY = 0
         self._modelChange = ""
         self._matrix = QMatrix4x4(
             1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
-        self._matrixPython = np.identity(4, dtype=np.float32)
         self._origin = [0, 0, 0]
+        self._translation = np.zeros(3, dtype=np.float32)
+        self._rotation = np.zeros(3, dtype=np.float32)
+        self._scale = np.ones(3, dtype=np.float32)
         self._bottomLeftOrigin = [0, 0, 0, 0, 0, 0]
         self.loadSettings()
 
@@ -96,6 +98,9 @@ class TransformationMatrixManager(QObject):
     def set_modelChange(self, path):
         if self._modelChange != path:
             self._modelChange = path
+            self._translation = np.zeros(3, dtype=np.float32)
+            self._rotation = np.zeros(3, dtype=np.float32)
+            self._scale = np.ones(3, dtype=np.float32)
             self.modelChanged.emit(path)
 
     @Property(QMatrix4x4, notify=matrixChanged)
@@ -103,8 +108,8 @@ class TransformationMatrixManager(QObject):
         return self._matrix
 
     @Slot(QMatrix4x4)
-    def set_matrix(self):
-        m = self._matrixPython
+    def set_matrix(self, matrix):
+        m = matrix
         m = np.dot(m, np.array([[1, 0, 0, 0], [0, 0, 1, 0], [
                    0, -1, 0, 0], [0, 0, 0, 1]]))  # rotation x -90
         m = m.flatten()
@@ -115,74 +120,118 @@ class TransformationMatrixManager(QObject):
     @Slot(float)
     def set_x(self, new_x):
         new_x = round(new_x, 2)
-        if new_x != self._matrixPython[0][3]:
-            self._matrixPython[0][3] = new_x
-            self.set_matrix()
+        if new_x != self._translation[0]:
+            self._translation[0] = new_x
+            self.transformation()
             self.send.xLocationChangeSig.emit(new_x)
 
     @Slot(float)
     def set_y(self, new_y):
         new_y = round(new_y, 2)
-        if new_y != self._matrixPython[2][3]:
-            self._matrixPython[2][3] = -new_y
-            self.set_matrix()
+        if new_y != self._translation[2]:
+            self._translation[2] = -new_y
+            self.transformation()
             self.send.yLocationChangeSig.emit(new_y)
 
     @Slot(float)
     def set_z(self, new_z):
         new_z = round(new_z, 2)
-        if new_z != self._matrixPython[1][3]:
-            self._matrixPython[1][3] = new_z
-            self.set_matrix()
+        if new_z != self._translation[1]:
+            self._translation[1] = new_z
+            self.transformation()
             self.send.zLocationChangeSig.emit(new_z)
 
     @Slot(float)
     def set_x_rot(self, angle):
-        sin = np.sin(np.deg2rad(angle))
-        cos = np.cos(np.deg2rad(angle))
+        self._rotation[0] = angle
+        self.transformation()
+        self.send.xRotationChangeSig.emit(angle)
+
+    @Slot(float)
+    def set_y_rot(self, angle):
+        self._rotation[1] = angle
+        self.transformation()
+        self.send.yRotationChangeSig.emit(angle)
+
+    @ Slot(float)
+    def set_z_rot(self, angle):
+        self._rotation[2] = angle
+        self.transformation()
+        self.send.zRotationChangeSig.emit(angle)
+
+    @ Slot(float)
+    def set_x_scale(self, percente):
+        percente = percente/100
+        self._scale[0] = percente
+        self.transformation()
+        self.send.xScaleChangeSig.emit(percente)
+
+    @ Slot(float)
+    def set_y_scale(self, percente):
+        percente = percente/100
+        self._scale[1] = percente
+        self.transformation()
+        self.send.yScaleChangeSig.emit(percente)
+
+    @ Slot(float)
+    def set_z_scale(self, percente):
+        percente = percente/100
+        self._scale[2] = percente
+        self.transformation()
+        self.send.zScaleChangeSig.emit(percente)
+
+    def transformation(self):
+        sinX = np.sin(np.deg2rad(self._rotation[0]))
+        cosX = np.cos(np.deg2rad(self._rotation[0]))
+
+        sinY = np.sin(np.deg2rad(self._rotation[1]))
+        cosY = np.cos(np.deg2rad(self._rotation[1]))
+
+        sinZ = np.sin(np.deg2rad(self._rotation[2]))
+        cosZ = np.cos(np.deg2rad(self._rotation[2]))
+
         transfor_arr = np.array([[1, 0, 0, self._origin[0]],
                                  [0, 1, 0, self._origin[2]],
                                  [0, 0, 1, -self._origin[1]],
                                  [0, 0, 0, 1]])
 
-        rotation_arr = np.array([[1,   0,   0,  0],
-                                 [0, cos, -sin, 0],
-                                 [0, sin,  cos, 0],
-                                 [0,   0,   0,  1]])
+        rotation_z_arr = np.array([[cosZ, -sinZ, 0, 0],
+                                   [sinZ,  cosZ, 0, 0],
+                                   [0,        0, 1, 0],
+                                   [0,        0, 0, 1]])
+
+        rotation_y_arr = np.array([[cosY,  0, sinY,  0],
+                                   [0,     1,    0,  0],
+                                   [-sinY, 0, cosY,  0],
+                                   [0,     0,    0,  1]])
+
+        rotation_x_arr = np.array([[1,    0,     0, 0],
+                                   [0, cosX, -sinX, 0],
+                                   [0, sinX,  cosX, 0],
+                                   [0,    0,     0, 1]])
 
         transfor_back_arr = np.array([[1, 0, 0, -self._origin[0]],
                                       [0, 1, 0, -self._origin[2]],
                                       [0, 0, 1, self._origin[1]],
                                       [0, 0, 0, 1]])
-        self._matrixPython = np.dot(self._matrixPython, transfor_arr)
-        self._matrixPython = np.dot(self._matrixPython, rotation_arr)
-        self._matrixPython = np.dot(self._matrixPython, transfor_back_arr)
-        self.set_matrix()
-        self.send.xRotationChangeSig.emit(angle)
 
-    @Slot(float)
-    def set_y_rot(self, angle):
-        sin = np.sin(np.deg2rad(angle))
-        cos = np.cos(np.deg2rad(angle))
-        transfor_arr = np.array([[1, 0, 0,  self._origin[0]],
-                                 [0, 1, 0,  self._origin[2]],
-                                 [0, 0, 1, -self._origin[1]],
-                                 [0, 0, 0, 1]])
+        scale_arr = np.array([[self._scale[0], 0, 0, 0],
+                              [0, self._scale[1], 0, 0],
+                              [0, 0, self._scale[2], 0],
+                              [0, 0,             0, 1]])
 
-        rotation_arr = np.array([[cos,  0, sin,  0],
-                                 [0,    1,   0,  0],
-                                 [-sin, 0, cos,  0],
-                                 [0,    0,   0,  1]])
+        tmp = np.identity(4, dtype=np.float32)
+        tmp = np.dot(tmp, transfor_arr)
+        tmp = np.dot(tmp, rotation_z_arr)
+        tmp = np.dot(tmp, rotation_y_arr)
+        tmp = np.dot(tmp, rotation_x_arr)
+        tmp = np.dot(tmp, transfor_back_arr)
+        tmp = np.dot(tmp, scale_arr)
 
-        transfor_back_arr = np.array([[1, 0, 0, -self._origin[0]],
-                                      [0, 1, 0, -self._origin[2]],
-                                      [0, 0, 1,  self._origin[1]],
-                                      [0, 0, 0, 1]])
-        self._matrixPython = np.dot(self._matrixPython, transfor_arr)
-        self._matrixPython = np.dot(self._matrixPython, rotation_arr)
-        self._matrixPython = np.dot(self._matrixPython, transfor_back_arr)
-        self.set_matrix()
-        self.send.yRotationChangeSig.emit(angle)
+        for i, val in enumerate(self._translation):
+            tmp[i, 3] = val
+        # print(tmp)
+        self.set_matrix(tmp)
 
     @ Property(QVector3D, notify=originChanged)
     def origin(self):
@@ -259,7 +308,7 @@ class MeshUtils(QObject):
     trisCountChangeSig = Signal(int)
     dimensionChangeSig = Signal(float, float, float)
     boundingChangeSig = Signal(list, list)
-    imageChangeSig = Signal(QPixmap)
+    renderChangeSig = Signal(QPixmap)
 
     def __init__(self):
         super(MeshUtils, self).__init__()
@@ -267,7 +316,7 @@ class MeshUtils(QObject):
         contr.addSend("3d/model/tris", self.trisCountChangeSig)
         contr.addSend("3d/model/dimension", self.dimensionChangeSig)
         contr.addSend("3d/model/bounding", self.boundingChangeSig)
-        contr.addSend("3d/view/top", self.imageChangeSig)
+        contr.addSend("3d/view/top", self.renderChangeSig)
 
     @ Slot(Qt3DRender.QGeometry)
     def get_geometry(self, reply):
@@ -276,6 +325,11 @@ class MeshUtils(QObject):
         for i in atributes:
             if i.name() == 'vertexPosition':
                 vertexPosition = i
+        #print("type =", vertexPosition.VertexBaseType())
+        #print("offset =", vertexPosition.byteOffset())
+        #print("stride =", vertexPosition.byteStride())
+        #print("divisior =", vertexPosition.divisor())
+        #print("size =", vertexPosition.vertexSize())
 
         vertices_count = vertexPosition.count()
         tmp = np.frombuffer(vertexPosition.buffer().data(), dtype=np.float32)
@@ -286,24 +340,24 @@ class MeshUtils(QObject):
                 arr = np.append(arr, np.array(
                     [[i, j, k]], dtype=np.float32), axis=0)
             iterator += 1
-            # print("%.2f %.2f %.2f" % (i,j,k))
+            #print("%.2f %.2f %.2f" % (i, j, k))
 
         # print(arr)
         size_min = arr.min(axis=0)
         size_max = arr.max(axis=0)
         self.boundingChangeSig.emit(size_min, size_max)
 
-        print("count = ", vertices_count/3)
+        #print("count = ", vertices_count/3)
         self.trisCountChangeSig.emit(int(vertices_count/3))
 
         x, y, z = (abs(size_max)+abs(size_min))
         self.dimensionChangeSig.emit(x, y, z)
 
     @ Slot(QImage)
-    def model(self, reply):
+    def render(self, reply):
         reply.mirrored()
         image = QPixmap.fromImage(reply)
-        self.imageChangeSig.emit(image)
+        self.renderChangeSig.emit(image)
 
 
 pyobject = MeshUtils()
@@ -390,4 +444,3 @@ class Model3dWidget(QQuickWidget):
         else:
             self.imageChangeNameSig.emit(name)
             self.imageChangePathSig.emit(fname)
-

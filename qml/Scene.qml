@@ -8,9 +8,25 @@ import Qt3D.Extras 2.15
 Entity {
     id: rootNode
     property bool move
-    property var set_parent
+    property bool rotate
     property var reply
     
+    //button move event
+    onMoveChanged: {
+        if(move)
+            tg.attachTo(model)
+        else
+            tg.detach()
+    }
+
+    //button rotate event
+    onRotateChanged: {
+        if(rotate)
+            rotateGizmo.attachTo(model)
+        else
+            rotateGizmo.detach()
+    }
+
     function doRenderCapture()
     {
         reply = scene.requestRenderCapture()
@@ -19,12 +35,7 @@ Entity {
 
     function onRenderCaptureComplete()
     {
-        _renderCaptureProvider.model(reply.image)
-        //image.source = "image://rendercapture/" + cid
-        //reply.saveImage("capture" + cid + ".png")
-        //cid++
-        //if (continuous === true)
-        //    doRenderCapture()
+        _renderCaptureProvider.render(reply.image)
     }
 
     function requestRenderCapture()
@@ -82,10 +93,9 @@ Entity {
     }
 
     Layer {
-                id: topLayer
-                recursive: true
-            }
-    //hoverEnabled: true // needed for ObjectPickers to handle hover events
+        id: topLayer
+        recursive: true
+    }
 
     /*
     function printHits(desc, hits) {
@@ -126,96 +136,78 @@ Entity {
         r_manager.set_y(window_manager.yBed/2-r_manager.origin.y)
     }
 
-        //Component.onCompleted: {doRenderCapture()}//do poprawy
-        PhongMaterial {
-            id: material
-            ambient: "gray"
-            diffuse: "gray"
-            specular: "black"
-        }
+    PhongMaterial {
+        id: material
+        ambient: "gray"
+        diffuse: "gray"
+        specular: "black"
+    }
 
-        Entity {
-            id: model
-            Layer {
-                id: modelLayer
-            }
-            Mesh {
-                id: modelMesh
-                source: r_manager.modelChange
-                onStatusChanged: {
-                    
-                    if (modelMesh.state == 'ready' )
-                        doRenderCapture()
-                        
-                    //console.log(r_manager.origin)
-                    if(modelMesh.geometry == null)
-                        return
-                    //console.log(modelMesh.geometry)
+    Entity {
+        id: model
+        Layer {
+            id: modelLayer
+        }
+        Mesh {
+            id: modelMesh
+            source: r_manager.modelChange
+            onStatusChanged: {
+                //if(modelMesh.geometry == null)
+                //    return
+                if(modelMesh.status == 2) {
                     _renderCaptureProvider.get_geometry(modelMesh.geometry)
-                    console.log(r_manager.origin)
-                    
-                    //tg.attachTo(model)
+                    console.log("--------new model--------")
+                    console.log("central origin: "+r_manager.origin)
+                    console.log("bottom left origin: "+r_manager.bottomLeftOrigin)
                 }
             }
-
-            Transform {
-                id: modelTransform
-               // matrix: rotateAround(Qt.vector3d(-r_manager.origin.x, r_manager.origin.z, -r_manager.origin.y), -90, Qt.vector3d( 1.0, 0.0, 0.0 ))
-                //translation.x: r_manager.x
-                //translation.y: r_manager.z
-                //translation.z: -r_manager.y
-                matrix: r_manager.matrix
-                //rotationX: -90
-                //rotationY: r_manager.z_rot
-                //rotationZ: -r_manager.y_rot
-                
-                //matrix: rotateAround(Qt.point(1,1), userAngle, Qt.vector3d( 0.0, 0.0, 1.0 ))
-                //scale3D: Qt.vector3d(r_manager.x_scale,r_manager.y_scale,r_manager.z_scale)
-                //PropertyChanges {
-                    //target: qmlNote
-                  //  onNoteChanged: doRenderCapture
-                //}
-                onScale3DChanged: doRenderCapture()
-                onRotationXChanged: doRenderCapture()
-                onTranslationChanged: doRenderCapture()
-                //onMatrixChanged: console.log(r_manager.matrix)
-            }
-            TransformGizmo {
-                id: tg
-                layer: topLayer
-                cameraController: mainCameraController
-                camera: camera
-                is_active: move
-                //size: 0.125 * absolutePosition.minus(camera.position).length()
-            }
-
-            components: [modelMesh, material, modelTransform, modelLayer/*, screenRayCaster, mouseHandler*/]
         }
 
-        onMoveChanged: {
-            if(move == true)
-                tg.attachTo(model)
-            else
-                tg.detach()
+        Transform {
+            id: modelTransform
+            matrix: r_manager.matrix
+            onMatrixChanged: doRenderCapture()
         }
 
-        GridEntity {
-            Layer {
-                id: gridLayer
-            }
-            id: raydisplay
-            sizeX: window_manager.xBed
-            sizeY: window_manager.yBed
-            layer: gridLayer
+        TransformGizmo {
+            id: tg
+            layer: topLayer
+            cameraController: mainCameraController
+            camera: camera
+            is_active: move
+            //size: 0.125 * absolutePosition.minus(camera.position).length()
         }
-        AxisEntity {
-            length: 20
+
+        RotationGizmo {
+            id: rotateGizmo
+            layer: topLayer
+            cameraController: mainCameraController
+            camera: camera
+            is_active: rotate
         }
-        LightEntity{
-            Layer {
-                id: lightLayer
-            }
-            layer: lightLayer
+
+        components: [modelMesh, material, modelTransform, modelLayer/*, screenRayCaster, mouseHandler*/]
+    }
+
+    GridEntity {
+        Layer {
+            id: gridLayer
         }
+        id: raydisplay
+        sizeX: window_manager.xBed
+        sizeY: window_manager.yBed
+        layer: gridLayer
+    }
+
+    AxisEntity {
+        length: 20
+    }
+
+    LightEntity {
+        Layer {
+            id: lightLayer
+        }
+        layer: lightLayer
+    }
 
 }

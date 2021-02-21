@@ -33,9 +33,10 @@ Entity {
     property bool visible: false
     property vector3d absolutePosition: Qt.vector3d(0, 0, 0)
     property real hoverHilightFactor: 1.44
+    property real angularSpeed: 2.0
     property var hoverElements: new Set()
-    property var hoverElement: TransformGizmo.UIElement.None
-    property var activeElement: TransformGizmo.UIElement.None
+    property var hoverElement: RotationGizmo.UIElement.None
+    property var activeElement: RotationGizmo.UIElement.None
     components: [ownTransform, layer]
 
     enum UIElement {
@@ -50,9 +51,9 @@ Entity {
         if(active) hoverElements.add(element)
         else hoverElements.delete(element)
 
-        var newHoverElement = TransformGizmo.UIElement.None
-        for(var x of [TransformGizmo.UIElement.BeamX, TransformGizmo.UIElement.BeamY, TransformGizmo.UIElement.BeamZ])
-            if(newHoverElement === TransformGizmo.UIElement.None && hoverElements.has(x))
+        var newHoverElement = RotationGizmo.UIElement.None
+        for(var x of [RotationGizmo.UIElement.BeamX, RotationGizmo.UIElement.BeamY, RotationGizmo.UIElement.BeamZ])
+            if(newHoverElement === RotationGizmo.UIElement.None && hoverElements.has(x))
                 newHoverElement = x
         hoverElement = newHoverElement
     }
@@ -126,6 +127,20 @@ Entity {
                     return entity.components[i]
     }
 
+    function angleAxisToQuat(angle, x, y, z) {
+        var a = angle * Math.PI / 180.0;
+        var s = Math.sin(a * 0.5);
+        var c = Math.cos(a * 0.5);
+        return Qt.quaternion(c, x * s, y * s, z * s);
+    }
+
+    function multiplyQuaternion(q1, q2) {
+        return Qt.quaternion(q1.scalar * q2.scalar - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z,
+                             q1.scalar * q2.x + q1.x * q2.scalar + q1.y * q2.z - q1.z * q2.y,
+                             q1.scalar * q2.y + q1.y * q2.scalar + q1.z * q2.x - q1.x * q2.z,
+                             q1.scalar * q2.z + q1.z * q2.scalar + q1.x * q2.y - q1.y * q2.x);
+    }
+
     function attachTo(entity) {
             targetTransform = getTransform(entity)
             fixOwnTransform()
@@ -164,6 +179,13 @@ Entity {
     }
 
 
+    function rotate(dx, dy, dz) {
+        if(!targetTransform) return
+        targetTransform.rotation = multiplyQuaternion(angleAxisToQuat(angularSpeed * dx, 1, 0, 0), targetTransform.rotation)
+        targetTransform.rotation = multiplyQuaternion(angleAxisToQuat(angularSpeed * dz, 0, 1, 0), targetTransform.rotation)
+        targetTransform.rotation = multiplyQuaternion(angleAxisToQuat(angularSpeed * -dy, 0, 0, 1), targetTransform.rotation)
+    }
+
     QQ2.Loader {
         active: !!targetTransform
         sourceComponent: QQ2.Connections {
@@ -189,7 +211,7 @@ Entity {
                 return
             }
             if(mouse.button == Qt.LeftButton) {
-                if(hoverElement === TransformGizmo.UIElement.None) return
+                if(hoverElement === RotationGizmo.UIElement.None) return
                 lastPos = Qt.point(mouse.x, mouse.y)
                 if(cameraController) cameraController.enabled = false
                 activeElement = hoverElement
@@ -197,30 +219,30 @@ Entity {
             }
         }
         onPositionChanged: {
-            if(activeElement === TransformGizmo.UIElement.None) return
+            if(activeElement === RotationGizmo.UIElement.None) return
             var dx = mouse.x - lastPos.x
             var dy = mouse.y - lastPos.y
             var d = projectMotion(dx, -dy)
-            var x = activeElement === TransformGizmo.UIElement.BeamX
-            var y = activeElement === TransformGizmo.UIElement.BeamY
-            var z = activeElement === TransformGizmo.UIElement.BeamZ
-            translate(x * d.x, y * d.y, z * d.z)
+            var x = activeElement === RotationGizmo.UIElement.BeamX
+            var y = activeElement === RotationGizmo.UIElement.BeamY
+            var z = activeElement === RotationGizmo.UIElement.BeamZ
+            rotate(x * d.x, y * d.y, z * d.z)
             
             lastPos = Qt.point(mouse.x, mouse.y)
         }
         onReleased: {
-            if(activeElement === TransformGizmo.UIElement.None) return
+            if(activeElement === RotationGizmo.UIElement.None) return
             if(cameraController) cameraController.enabled = true
-            activeElement = TransformGizmo.UIElement.None
+            activeElement = RotationGizmo.UIElement.None
         }
     }
 
     NodeInstantiator {
         id: beams
         model: [
-            {r: Qt.vector3d( 0, 0, -90), v: Qt.vector3d(1, 0, 0), color: "#f33", element: TransformGizmo.UIElement.BeamX},
-            {r: Qt.vector3d( 0, 0,   0), v: Qt.vector3d(0, 1, 0), color: "#3f3", element: TransformGizmo.UIElement.BeamY},
-            {r: Qt.vector3d(90, 0,   0), v: Qt.vector3d(0, 0, 1), color: "#33f", element: TransformGizmo.UIElement.BeamZ}
+            {r: Qt.vector3d( 0, 0, -90), v: Qt.vector3d(1, 0, 0), color: "#f33", element: RotationGizmo.UIElement.BeamX},
+            {r: Qt.vector3d( 0, 0,   0), v: Qt.vector3d(0, 1, 0), color: "#3f3", element: RotationGizmo.UIElement.BeamY},
+            {r: Qt.vector3d(90, 0,   0), v: Qt.vector3d(0, 0, 1), color: "#33f", element: RotationGizmo.UIElement.BeamZ}
         ]
         delegate: Entity {
             components: [beamTransform]
@@ -237,7 +259,7 @@ Entity {
                 id: beam
                 readonly property bool hover: root.hoverElement === modelData.element
                 readonly property bool active: root.activeElement === modelData.element
-                readonly property bool hilighted: active || (root.activeElement === TransformGizmo.UIElement.None && hover)
+                readonly property bool hilighted: active || (root.activeElement === RotationGizmo.UIElement.None && hover)
                 readonly property color color: modelData.color
                 components: [beamPicker]
 
@@ -270,19 +292,18 @@ Entity {
                 }
 
                 Entity {
-                    components: [translateMesh, translateTransform, beamMaterial]
+                    components: [rotateMesh, rotateTransform, beamMaterial]
 
-                    ConeMesh {
-                        id: translateMesh
+                    CylinderMesh {
+                        id: rotateMesh
                         enabled: root.visible
-                        bottomRadius: 0.125 * absolutePosition.minus(camera.position).length() * 0.035 * 2
-                        topRadius: 0
+                        radius: 0.125 * absolutePosition.minus(camera.position).length() * 0.035 * 2
                         length: 0.125 * absolutePosition.minus(camera.position).length() * 0.2
                     }
 
                     Transform {
-                        id: translateTransform
-                        translation: Qt.vector3d(0, lineMesh.length + translateMesh.length / 2, 0)
+                        id: rotateTransform
+                        translation: Qt.vector3d(0, lineMesh.length + rotateMesh.length / 2, 0)
                     }
                 }
 

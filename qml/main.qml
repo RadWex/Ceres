@@ -11,22 +11,21 @@ Item {
     //visible: true
     //anchors.fill: parent
     property bool move : false
-    property bool rotation : false
-    property bool lay : false
-    //![1]
+    property bool rotate : false
+
     Scene3D {
         id: scene3d
-        //multisample: true
+        multisample: true
         hoverEnabled: true
-        //anchors.fill: parent
+        anchors.fill: parent
         width: parent.width
         height: parent.height
         //cameraAspectRatioMode: Scene3D.AutomaticAspectRatio
         aspects: ["render", "input", "logic"]
         Scene {
-            set_parent: scene3d
             id: scene
             move: mainview.move
+            rotate: mainview.rotate
         }
     }
 
@@ -57,6 +56,10 @@ Item {
                     }
                     else
                     {
+                        if(mainview.rotate){
+                            mainview.rotate = false
+                            buttonRotate.color = "black"
+                        }
                         mainview.move = true
                         buttonMove.color = "#007bd9"
                     }
@@ -67,14 +70,18 @@ Item {
                 id: buttonRotate
                 source: "../icons/rotation.png"
                 onClicked: {
-                    if(mainview.move)
+                    if(mainview.rotate)
                     {
-                        mainview.move = false
+                        mainview.rotate = false
                         buttonRotate.color = "black"
                     }
                     else
                     {
-                        mainview.move = true
+                        if(mainview.move){
+                            mainview.move = false
+                            buttonMove.color = "black"
+                        }
+                        mainview.rotate = true
                         buttonRotate.color = "#007bd9"
                     }
                 }
@@ -99,4 +106,21 @@ Item {
         layer.enabled: true
     }
 
+    /*
+    Rectangle {
+        visible: false
+        id: loadingDarken
+        width: parent.width
+        height: parent.height
+        color: "#33000000"
+
+        Text {
+            text:  qsTr("Loading...")
+            font.pointSize: 30
+            anchors.fill:parent
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+    }
+    */
 }

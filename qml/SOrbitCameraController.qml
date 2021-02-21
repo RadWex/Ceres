@@ -32,7 +32,6 @@ Entity{
         onPositionChanged: {
             if(!root.enabled) return;
 
-            // You can change the button as you like for rotation or translation
             if (mouse.buttons === 1){ // Left button for rotation
                 pan = -(mouse.x - lastPos.x) * dt * lookSpeed;
                 tilt = (mouse.y - lastPos.y) * dt * lookSpeed;
