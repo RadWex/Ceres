@@ -149,13 +149,13 @@ class TransformationMatrixManager(QObject):
 
     @Slot(float)
     def set_y_rot(self, angle):
-        self._rotation[1] = angle
+        self._rotation[2] = angle
         self.transformation()
         self.send.yRotationChangeSig.emit(angle)
 
     @ Slot(float)
     def set_z_rot(self, angle):
-        self._rotation[2] = angle
+        self._rotation[1] = angle
         self.transformation()
         self.send.zRotationChangeSig.emit(angle)
 
@@ -220,16 +220,23 @@ class TransformationMatrixManager(QObject):
                               [0, 0, self._scale[2], 0],
                               [0, 0,             0, 1]])
 
-        tmp = np.identity(4, dtype=np.float32)
-        tmp = np.dot(tmp, transfor_arr)
-        tmp = np.dot(tmp, rotation_z_arr)
-        tmp = np.dot(tmp, rotation_y_arr)
-        tmp = np.dot(tmp, rotation_x_arr)
-        tmp = np.dot(tmp, transfor_back_arr)
-        tmp = np.dot(tmp, scale_arr)
+        move_matrix = np.array([[1, 0, 0, self._translation[0]],
+                                [0, 1, 0, self._translation[1]],
+                                [0, 0, 1, self._translation[2]],
+                                [0, 0, 0, 1]])
 
+        tmp = np.identity(4, dtype=np.float32)
+        tmp = np.dot(transfor_arr, tmp)
+        tmp = np.dot(scale_arr, tmp)
+        tmp = np.dot(rotation_z_arr, tmp)
+        tmp = np.dot(rotation_y_arr, tmp)
+        tmp = np.dot(rotation_x_arr, tmp)
+        tmp = np.dot(transfor_back_arr, tmp)
+
+        #tmp = np.dot(move_matrix, tmp)
         for i, val in enumerate(self._translation):
-            tmp[i, 3] = val
+            tmp[i][3] = val
+
         # print(tmp)
         self.set_matrix(tmp)
 

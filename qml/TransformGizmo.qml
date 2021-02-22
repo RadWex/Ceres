@@ -134,6 +134,7 @@ Entity {
 
     function detach() {
         visible = false
+        targetTransform = null
         updateAbsolutePosition()
     }
     

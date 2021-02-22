@@ -29,7 +29,6 @@ Entity {
     property var cameraController
     property Camera camera
     property Transform targetTransform
-    property real linearSpeed: 0.5
     property bool visible: false
     property vector3d absolutePosition: Qt.vector3d(0, 0, 0)
     property real hoverHilightFactor: 1.44
@@ -127,20 +126,6 @@ Entity {
                     return entity.components[i]
     }
 
-    function angleAxisToQuat(angle, x, y, z) {
-        var a = angle * Math.PI / 180.0;
-        var s = Math.sin(a * 0.5);
-        var c = Math.cos(a * 0.5);
-        return Qt.quaternion(c, x * s, y * s, z * s);
-    }
-
-    function multiplyQuaternion(q1, q2) {
-        return Qt.quaternion(q1.scalar * q2.scalar - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z,
-                             q1.scalar * q2.x + q1.x * q2.scalar + q1.y * q2.z - q1.z * q2.y,
-                             q1.scalar * q2.y + q1.y * q2.scalar + q1.z * q2.x - q1.x * q2.z,
-                             q1.scalar * q2.z + q1.z * q2.scalar + q1.x * q2.y - q1.y * q2.x);
-    }
-
     function attachTo(entity) {
             targetTransform = getTransform(entity)
             fixOwnTransform()
@@ -149,20 +134,8 @@ Entity {
 
     function detach() {
         visible = false
+        targetTransform = null
         updateAbsolutePosition()
-    }
-    
-    function translate(dx, dy, dz) {
-        if(!targetTransform) return
-        var copy = targetTransform.translation.x
-        copy += linearSpeed * dx
-        r_manager.set_x(copy)
-        var copyY = -targetTransform.translation.z
-        copyY += linearSpeed * dy
-        r_manager.set_y(copyY)
-        var copyZ = targetTransform.translation.y
-        copyZ += linearSpeed * dz
-        r_manager.set_z(copyZ)
     }
 
     function fixOwnTransform() {
@@ -178,12 +151,21 @@ Entity {
         updateAbsolutePosition()
     }
 
-
     function rotate(dx, dy, dz) {
         if(!targetTransform) return
-        targetTransform.rotation = multiplyQuaternion(angleAxisToQuat(angularSpeed * dx, 1, 0, 0), targetTransform.rotation)
-        targetTransform.rotation = multiplyQuaternion(angleAxisToQuat(angularSpeed * dz, 0, 1, 0), targetTransform.rotation)
-        targetTransform.rotation = multiplyQuaternion(angleAxisToQuat(angularSpeed * -dy, 0, 0, 1), targetTransform.rotation)
+        var t = targetTransform.matrix
+
+        var x = Math.atan2(t.m32, t.m33) * (180/Math.PI) + 90
+        x += angularSpeed * dx 
+        r_manager.set_x_rot(x)
+
+        var y = Math.atan2(t.m21, t.m11) * (180/Math.PI)
+        y += angularSpeed * dy
+        r_manager.set_y_rot(y)
+
+        var z = Math.atan2(-t.m31, Math.sqrt(t.m32*t.m32+t.m33*t.m33)) * (180/Math.PI)
+        z += angularSpeed * dz
+        r_manager.set_z_rot(z)
     }
 
     QQ2.Loader {
