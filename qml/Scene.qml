@@ -43,7 +43,7 @@ Entity {
         return quadViewportFrameGraph.renCap.requestCapture()
     }
 
-    components: [quadViewportFrameGraph, inputSettings]
+    components: [quadViewportFrameGraph, inputSettings, raycaster]
 
     QuadViewportFrameGraph {
         id: quadViewportFrameGraph
@@ -97,38 +97,33 @@ Entity {
         recursive: true
     }
 
-    /*
+    
     function printHits(desc, hits) {
-            console.log(desc, hits.length)
-            for (var i=0; i<hits.length; i++) {
-                console.log("  " + hits[i].entity.objectName, hits[i].distance,
-                            hits[i].worldIntersection.x, hits[i].worldIntersection.y, hits[i].worldIntersection.z)
-            }
+        console.log(desc, hits.length)
+        for (var i=0; i<hits.length; i++) {
+            console.log("  " + hits[i].entity.objectName, hits[i].distance,
+                        hits[i].worldIntersection.x, hits[i].worldIntersection.y, hits[i].worldIntersection.z)
         }
-
+    }
+    /*
     RayCaster {
-            id: raycaster
-            origin: Qt.vector3d(0, 0, 4)
-            direction: Qt.vector3d(0., 0., -1.)
-            length: 5
+        id: raycaster
+        origin: Qt.vector3d(100, 40, -100)
+        direction: Qt.vector3d(0., -1., 0.)
+        length: 100
 
-            onHitsChanged: printHits("Model hits", hits)
-        }
+        onHitsChanged: printHits("Model hits", hits)
+    }
 
-        ScreenRayCaster {
-                id: screenRayCaster
-
-                onHitsChanged: printHits("Screen hits", hits)
-            }
-        MouseHandler {
-                id: mouseHandler
-                sourceDevice:  MouseDevice {}
-                onReleased: { screenRayCaster.trigger(Qt.point(mouse.x, mouse.y))
-                console.log("dzoala")}
+    LineEntity {
+        origin: Qt.vector3d(100, 40, -100)
+        direction: Qt.vector3d(0., -1., 0.)
+        length: 100
+    }
     */
-
     function set_on_bed(){
         r_manager.set_z(-r_manager.bottomLeftOrigin.z)
+        //raycaster.trigger()
     }
 
     function center_on_bed(){
@@ -152,6 +147,7 @@ Entity {
             id: modelMesh
             source: r_manager.modelChange
             onStatusChanged: {
+                //raycaster.trigger()
                 //if(modelMesh.geometry == null)
                 //    return
                 if(modelMesh.status == 2) {
@@ -177,7 +173,7 @@ Entity {
             is_active: move
             //size: 0.125 * absolutePosition.minus(camera.position).length()
         }
-
+        
         RotationGizmo {
             id: rotateGizmo
             layer: topLayer
@@ -186,9 +182,9 @@ Entity {
             is_active: rotate
         }
 
-        components: [modelMesh, material, modelTransform, modelLayer/*, screenRayCaster, mouseHandler*/]
+        components: [modelMesh, material, modelTransform, modelLayer]
     }
-
+    
     GridEntity {
         Layer {
             id: gridLayer
@@ -198,7 +194,7 @@ Entity {
         sizeY: window_manager.yBed
         layer: gridLayer
     }
-
+    
     AxisEntity {
         length: 20
     }

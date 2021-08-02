@@ -224,7 +224,7 @@ Entity {
             {r: Qt.vector3d(90, 0,   0), v: Qt.vector3d(0, 0, 1), color: "#33f", element: TransformGizmo.UIElement.BeamZ}
         ]
         delegate: Entity {
-            components: [beamTransform]
+            components: visible ? [beamTransform] : []
 
             Transform {
                 id: beamTransform
@@ -240,7 +240,7 @@ Entity {
                 readonly property bool active: root.activeElement === modelData.element
                 readonly property bool hilighted: active || (root.activeElement === TransformGizmo.UIElement.None && hover)
                 readonly property color color: modelData.color
-                components: [beamPicker]
+                components: visible ? [beamPicker] : []
 
                 ObjectPicker {
                     id: beamPicker
@@ -255,7 +255,7 @@ Entity {
                 }
 
                 Entity {
-                    components: [lineMesh, lineTransform, beamMaterial]
+                    components: visible ? [lineMesh, lineTransform, beamMaterial] : []
 
                     CylinderMesh {
                         id: lineMesh
@@ -271,7 +271,7 @@ Entity {
                 }
 
                 Entity {
-                    components: [translateMesh, translateTransform, beamMaterial]
+                    components: visible ? [translateMesh, translateTransform, beamMaterial] : []
 
                     ConeMesh {
                         id: translateMesh

@@ -57,6 +57,9 @@ RenderSettings {
     }
     }
     pickingSettings.pickMethod: PickingSettings.TrianglePicking
-    pickingSettings.pickResultMode: PickingSettings.AllPicks
-    pickingSettings.faceOrientationPickingMode: PickingSettings.FrontAndBackFace
+    pickingSettings.pickResultMode: PickingSettings.NearestPick
+    pickingSettings.faceOrientationPickingMode: PickingSettings.FrontFace
+    //pickingSettings.pickResultMode: PickingSettings.NearestPick//PickingSettings.AllPicks
+    //pickingSettings.pickMethod: PickingSettings.PrimitivePicking
+    //pickingSettings.faceOrientationPickingMode: PickingSettings.FrontFace
 }
