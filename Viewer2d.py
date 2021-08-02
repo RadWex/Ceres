@@ -1,5 +1,5 @@
-from PySide2.QtWidgets import QGraphicsView, QGraphicsItem, QPushButton, QVBoxLayout, QHBoxLayout, QGraphicsScene, QApplication, QLabel, QWidget, QAction, QGridLayout
-from PySide2.QtGui import QPixmap, QPainter, QIcon, QKeySequence, QBrush, QColor
+from PySide2.QtWidgets import QGraphicsView, QGraphicsItem, QPushButton, QVBoxLayout, QFrame, QHBoxLayout, QGraphicsScene, QApplication, QLabel, QWidget, QAction, QGridLayout
+from PySide2.QtGui import QPixmap, QPainter, QIcon, QKeySequence, QBrush, QColor, QTransform
 from PySide2.QtCore import Qt, Signal, QSize, QRect, Slot
 from PIL.ImageQt import ImageQt
 from PIL import Image
@@ -336,6 +336,8 @@ class Image2dView(QGraphicsView):
         contr.addRecive('2d/image/path', self.openImage)
         contr.addRecive("2d/tool", self.setTool)
         contr.addRecive("2d/image/off", self.updateImage)
+        contr.addRecive("2d/image/location/x", self.set_x)
+        contr.addRecive("2d/image/scale/x", self.set_scale)
         contr.addSend("2d/image", self.imageChangeSig)
         contr.addSend("3d/model/path", self.modelChangePathSig)
         contr.addSend("3d/model/name", self.modelChangeNameSig)
@@ -350,6 +352,7 @@ class Image2dView(QGraphicsView):
         self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setFrameShape(QFrame.NoFrame)
 
         self.tool = None
 
@@ -361,6 +364,8 @@ class Image2dView(QGraphicsView):
         self.render = self.scene.addPixmap(QPixmap())
         self.texture = self.scene.addPixmap(QPixmap())
         self.setScene(self.scene)
+        self.x = 0
+        self.y = 0
 
     def drawBackground(self, painter, rect):
         background_brush = QBrush(QColor(153, 153, 153), Qt.SolidPattern)
@@ -381,12 +386,28 @@ class Image2dView(QGraphicsView):
         #print("render size ->", image.size())
         image = image.scaled(
             550, 550, Qt.IgnoreAspectRatio, Qt.FastTransformation)
+        image.save('test.png')
         self.render.setPixmap(image)
         self.scene.update()
+
+    def set_x(self, x):
+        self.x = (550*x)//200
+        self.updateCoord()
+
+    def set_scale(self, scale):
+        scale = scale/100
+        self.texture.setScale(scale)
+        print(self.texture.shape())
+        #self.y = 550-self.texture.height()
+        # self.scene.update()
+        print("new location", scale)
 
     def updateImage(self, image):
         self.texture.setPixmap(image)
         self.scene.update()
+
+    def updateCoord(self):
+        self.texture.setPos(self.x, self.y)
 
     def openImage(self, image):
         im = Image.open(image)
@@ -395,6 +416,8 @@ class Image2dView(QGraphicsView):
         pixmap = QPixmap.fromImage(qim)
         self.texture.setPixmap(pixmap)
         self.texture.setPos(0, 550-pixmap.height())
+        self.x = 0
+        self.y = 550-pixmap.height()
         self.texture.setZValue(1)
         self.texture.setOpacity(.5)
         if self.tool == 'move':
@@ -438,3 +461,14 @@ class Image2dView(QGraphicsView):
             self.imageChangeNameSig.emit(name)
             self.openImage(fname)
             # self.imageChangePathSig.emit("file:///"+fname)
+
+
+if __name__ == "__main__":
+    import sys
+    from PySide2.QtWidgets import QApplication
+    app = QApplication(sys.argv)
+    iw = ImageWidget()
+    Controller().match()
+    Controller().showConnections()
+    iw.show()
+    sys.exit(app.exec_())

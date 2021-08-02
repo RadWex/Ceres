@@ -12,4 +12,5 @@ if __name__ == "__main__":
     Controller().match()
     mainWindow.show()
     mainWindow.centerOnScreen()
+    # Controller().showConnections()
     sys.exit(app.exec_())

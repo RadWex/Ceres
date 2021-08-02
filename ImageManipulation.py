@@ -14,6 +14,9 @@ import io
 class ImageManipulation(QWidget):
     contrastChangeSig = Signal(int)
     imageChangeSig = Signal(QPixmap)
+    xImageLocationChangeSig = Signal(float)
+    xImageScaleChangeSig = Signal(float)
+    yImageLocationChangeSig = Signal(float)
 
     def __init__(self):
         super().__init__()
@@ -22,6 +25,8 @@ class ImageManipulation(QWidget):
         contr.addRecive("2d/image", self.set_image)
         contr.addSend("2d/image/off", self.imageChangeSig)
         contr.addSend("2d/image/contrast", self.contrastChangeSig)
+        contr.addSend("2d/image/location/x", self.xImageLocationChangeSig)
+        contr.addSend("2d/image/scale/x", self.xImageScaleChangeSig)
 
         self.image = None
 
@@ -66,7 +71,7 @@ class ImageManipulation(QWidget):
         double_validate = QDoubleValidator()
         self.x_input = QLineEdit("0")
         self.x_input.setValidator(double_validate)
-        # self.x_input.returnPressed.connect(self.send_x)
+        self.x_input.returnPressed.connect(self.send_x)
         grid.addWidget(self.x_input, row, 1)
         self.y_input = QLineEdit("0")
         self.y_input.setValidator(double_validate)
@@ -88,7 +93,7 @@ class ImageManipulation(QWidget):
         double_validate = QDoubleValidator()
         self.x_scale_input = QLineEdit("100")
         self.x_scale_input.setValidator(double_validate)
-        # self.x_scale_input.returnPressed.connect(self.send_scale_x)
+        self.x_scale_input.returnPressed.connect(self.send_scale_x)
         grid.addWidget(self.x_scale_input, row, 1)
         grid.addWidget(QLabel("%"), row, 2)
 
@@ -151,12 +156,19 @@ class ImageManipulation(QWidget):
         pixmap = QPixmap.fromImage(img)
         self.imageChangeSig.emit(pixmap)
 
-    def get_x(self):
+    def send_x(self):
         # print(self.sender().text())
         tmp = float(self.sender().text())
-        tmp = tmp*450/200
-        self.imageWidget.item1.setX(tmp)
-        # self.imageWidget.item1.scale(1, -1)
+        #tmp = tmp*450/200
+        self.xImageLocationChangeSig.emit(tmp)
+
+    def send_y(self):
+        tmp = float(self.sender().text())
+        self.yImageLocationChangeSig.emit(tmp)
+
+    def send_scale_x(self):
+        tmp = float(self.sender().text())
+        self.xImageScaleChangeSig.emit(tmp)
 
     def get_y(self):
         #self.imageWidget.item1.setTransform(QTransform.fromScale(1, -1))

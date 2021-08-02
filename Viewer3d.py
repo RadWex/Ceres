@@ -216,8 +216,8 @@ class TransformationMatrixManager(QObject):
                                       [0, 0, 0, 1]])
 
         scale_arr = np.array([[self._scale[0], 0, 0, 0],
-                              [0, self._scale[1], 0, 0],
-                              [0, 0, self._scale[2], 0],
+                              [0, self._scale[2], 0, 0],
+                              [0, 0, self._scale[1], 0],
                               [0, 0,             0, 1]])
 
         move_matrix = np.array([[1, 0, 0, self._translation[0]],
