@@ -293,7 +293,7 @@ class BedManager(QObject):
     def loadSettings(self):
         settings = Settings()
         self._xBed = float(settings.printerSettings['bed_size_x'])
-        self._yBed = float(settings.printerSettings['bed_size_x'])
+        self._yBed = float(settings.printerSettings['bed_size_y'])
 
     @ Property(float, notify=xBedChanged)
     def xBed(self):
