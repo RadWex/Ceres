@@ -1,14 +1,19 @@
-from PySide2.QtWidgets import QGraphicsView, QGraphicsItem, QPushButton, QVBoxLayout, QFrame, QHBoxLayout, QGraphicsScene, QApplication, QLabel, QWidget, QAction, QGridLayout
+from PySide2.QtWidgets import QGraphicsView, QGraphicsItem, QPushButton, QVBoxLayout, QFrame, QHBoxLayout, QGraphicsScene, QApplication, QLabel, QWidget, QAction, QGridLayout, QDockWidget, QMainWindow
 from PySide2.QtGui import QPixmap, QPainter, QIcon, QKeySequence, QBrush, QColor, QTransform
-from PySide2.QtCore import Qt, Signal, QSize, QRect, Slot
+from PySide2.QtCore import Qt, Signal, QSize, QRect, Slot, QPointF
 from PIL.ImageQt import ImageQt
 from PIL import Image
 from Controller import Controller
+from Settings import Settings
 
 
 class RulerWidget(QWidget):
-    def __init__(self, *args):
-        super(RulerWidget, self).__init__(*args)
+    def __init__(self, length):
+        super().__init__()
+        self.length = length
+        self.loadSettings()
+        contr = Controller()
+        contr.addRecive("3d/bedSize", self.set_bed)
         self.orientation = Qt.Horizontal
         self.firstEdge = False
         self.inv = False
@@ -38,7 +43,7 @@ class RulerWidget(QWidget):
             tick += 5
 
     def _drawTick(self, painter, tick, length):
-        tick = (550*tick)//200
+        tick = (self.length*tick)//self._xBed
         if self.firstEdge:
             tickStart = 0
             tickEnd = length
@@ -72,7 +77,7 @@ class RulerWidget(QWidget):
 
     def _drawTickLabel(self, painter, tick, pos):
         label = str(tick)
-        tick = (550*tick)//200
+        tick = (self.length*tick)//self._xBed
 
         if self.orientation == Qt.Horizontal:
             if self.inv:
@@ -108,6 +113,16 @@ class RulerWidget(QWidget):
         else:
             return QSize(20, 300)
 
+    def loadSettings(self):
+        settings = Settings()
+        self._xBed = float(settings.printerSettings['bed_size_x'])
+        self._yBed = float(settings.printerSettings['bed_size_y'])
+
+    def set_bed(self, new_x, new_y):
+        self._xBed = new_x
+        self._yBed = new_y
+        self.update()
+
 
 class RulerWindow(RulerWidget):
     def __init__(self, *args):
@@ -118,7 +133,7 @@ class RulerWindow(RulerWidget):
             'Press B to toggle borderless.\n'
             'Press R to toggle reverse direction of the ruler.'
         )
-        #self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+        # self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
 
         self.vertAction = QAction('&Vertical', self)
         self.vertAction.setShortcut(QKeySequence('v'))
@@ -200,14 +215,31 @@ class RulerWindow(RulerWidget):
         self.update()
 
 
-class ImageWidget(QWidget):
-    opacityChangeSig = Signal(int)
+class TEST_docking(QMainWindow):
+    # TODO DELETE (not used)
+    def __init__(self):
+        super().__init__()
+        self.items = QDockWidget("Dockable", self)
+
+        self.items.setWidget(ImageToolsWidget())
+        self.items.setFloating(False)
+        self.setCentralWidget(ImageWidget())
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.items)
+        mainLayout = QHBoxLayout()
+        # mainLayout.addWidget(ImageToolsWidget())
+        # mainLayout.addWidget(ImageWidget())
+        mainLayout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(mainLayout)
+
+
+class ImageToolsWidget(QWidget):
+    hideChangeSig = Signal()
     activeToolSig = Signal(str)
 
     def __init__(self):
         super().__init__()
         contr = Controller()
-        contr.addSend("2d/image/opacity", self.opacityChangeSig)
+        contr.addSend("2d/image/hide", self.hideChangeSig)
         contr.addSend("2d/tool", self.activeToolSig)
 
         buttonSize = QSize(40, 40)
@@ -261,11 +293,9 @@ class ImageWidget(QWidget):
         buttonLayout.addWidget(scaleButton)
         buttonLayout.addStretch()
         buttonLayout.addWidget(hideButton)
-        mainLayout = QHBoxLayout()
-        mainLayout.addLayout(buttonLayout)
-        mainLayout.addWidget(Container())
-        mainLayout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(mainLayout)
+
+        buttonLayout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(buttonLayout)
 
     def freeButtonActive(self):
         for i in self.toolButtons:
@@ -293,32 +323,42 @@ class ImageWidget(QWidget):
 
     def hideButtonActive(self):
         if self.sender().isChecked():
-            self.opacityChangeSig.emit(0)
+            self.hideChangeSig.emit()
             self.sender().setChecked(True)
         else:
-            self.opacityChangeSig.emit(100)
+            self.hideChangeSig.emit()
             self.sender().setChecked(False)
 
 
-class Container(QWidget):
+class ImageWidget(QWidget):
     def __init__(self):
         super().__init__()
-        top = RulerWidget()
-        left = RulerWidget()
+        initWorkspaceSizeX = 550
+        initWorkspaceSizeY = 550
+
+        top = RulerWidget(initWorkspaceSizeX)
+        left = RulerWidget(initWorkspaceSizeY)
         left.setOrientation(Qt.Vertical)
         left.inv = True
-        img = Image2dView()
-        fake = QWidget()
-        fake.setAttribute(Qt.WA_StyledBackground, True)
-        fake.setStyleSheet('background-color: lightGrey')
+
+        img = Image2dView(initWorkspaceSizeX, initWorkspaceSizeY)
+        blind_spot_ruler = QWidget()
+        blind_spot_ruler.setAttribute(Qt.WA_StyledBackground, True)
+        blind_spot_ruler.setStyleSheet('background-color: lightGrey')
         layout = QGridLayout()
         layout.setSpacing(0)
         layout.setMargin(0)
-        layout.addWidget(fake, 0, 0)
+        layout.addWidget(blind_spot_ruler, 0, 0)
         layout.addWidget(top, 0, 1)
         layout.addWidget(left, 1, 0)
         layout.addWidget(img, 1, 1)
         layout.setContentsMargins(0, 0, 0, 0)
+        # DEBUG
+        img.openImage("1.png")
+        img.set_x(20)
+        img.set_y(40)
+        img.set_scale(20)
+        ###
         self.setLayout(layout)
 
 
@@ -328,22 +368,29 @@ class Image2dView(QGraphicsView):
     imageChangePathSig = Signal(str)
     imageChangeNameSig = Signal(str)
     imageChangeSig = Signal(QPixmap)
+    imageChangeLocX = Signal(float)
+    imageChangeLocY = Signal(float)
 
-    def __init__(self):
+    def __init__(self, sizeX, sizeY):
         super().__init__()
         contr = Controller()
         contr.addRecive('2d/image/opacity', self.setOpacity)
+        contr.addRecive('2d/image/hide', self.hideUnhide)
         contr.addRecive('2d/image/path', self.openImage)
         contr.addRecive("2d/tool", self.setTool)
         contr.addRecive("2d/image/off", self.updateImage)
         contr.addRecive("2d/image/location/x", self.set_x)
+        contr.addRecive("2d/image/location/y", self.set_y)
         contr.addRecive("2d/image/scale/x", self.set_scale)
         contr.addSend("2d/image", self.imageChangeSig)
         contr.addSend("3d/model/path", self.modelChangePathSig)
         contr.addSend("3d/model/name", self.modelChangeNameSig)
-        #contr.addSend("2d/image/path", self.imageChangePathSig)
+        # contr.addSend("2d/image/path", self.imageChangePathSig)
         contr.addSend("2d/image/name", self.imageChangeNameSig)
+        contr.addSend("2d/image/location/x/set", self.imageChangeLocX)
+        contr.addSend("2d/image/location/y/set", self.imageChangeLocY)
         contr.addRecive('3d/view/top', self.addCameraImage)
+        contr.addRecive("3d/bedSize", self.bedChanged)
 
         self.setAcceptDrops(True)
         self._zoom = 0
@@ -355,10 +402,13 @@ class Image2dView(QGraphicsView):
         self.setFrameShape(QFrame.NoFrame)
 
         self.tool = None
+        self.opacity = .5
+        self.hidden = False
 
         self.scene = QGraphicsScene()
-        self.scene.setSceneRect(0, 0, 550, 550)
-        print(self.size())
+        self.scene.setSceneRect(
+            0, 0, sizeX, sizeY)
+        # print(self.size())
         self.setAlignment(Qt.AlignBottom | Qt.AlignLeft)
 
         self.render = self.scene.addPixmap(QPixmap())
@@ -366,11 +416,18 @@ class Image2dView(QGraphicsView):
         self.setScene(self.scene)
         self.x = 0
         self.y = 0
+        self.loadSettings()
 
     def drawBackground(self, painter, rect):
         background_brush = QBrush(QColor(153, 153, 153), Qt.SolidPattern)
         painter.fillRect(rect, background_brush)
 
+    def loadSettings(self):
+        settings = Settings()
+        self._xBed = float(settings.printerSettings['bed_size_x'])
+        self._yBed = float(settings.printerSettings['bed_size_y'])
+
+    '''
     def wheelEvent(self, event):
         if event.angleDelta().y() > 0:
             factor = 1.25
@@ -379,28 +436,38 @@ class Image2dView(QGraphicsView):
             factor = 0.8
             self._zoom -= 1
         self.scale(factor, factor)
+    '''
 
     def addCameraImage(self, image):
         if image.size().width() == 0:
             return
-        #print("render size ->", image.size())
+        # print("render size ->", image.size())
         image = image.scaled(
             550, 550, Qt.IgnoreAspectRatio, Qt.FastTransformation)
-        image.save('test.png')
+        # image.save('test.png') #TODO
         self.render.setPixmap(image)
         self.scene.update()
 
     def set_x(self, x):
-        self.x = (550*x)//200
+        # translation mm to px
+        self.x = (550*x)/self._xBed
+        print(self.x)
+        self.updateCoord()
+
+    def set_y(self, y):
+        # translation mm to px
+        self.y = -(550*y)//self._yBed
         self.updateCoord()
 
     def set_scale(self, scale):
         scale = scale/100
+        self.scale = scale
+        self.texture.setTransformOriginPoint(0, 550)
         self.texture.setScale(scale)
-        print(self.texture.shape())
-        #self.y = 550-self.texture.height()
+        #point = QPointF(0, (550-self.ph*scale))
+        # self.texture.setOffset(point)
+        # self.y = 550-self.texture.height()
         # self.scene.update()
-        print("new location", scale)
 
     def updateImage(self, image):
         self.texture.setPixmap(image)
@@ -415,21 +482,53 @@ class Image2dView(QGraphicsView):
         qim = ImageQt(im)
         pixmap = QPixmap.fromImage(qim)
         self.texture.setPixmap(pixmap)
-        self.texture.setPos(0, 550-pixmap.height())
+        self.ph = pixmap.height()
+        point = QPointF(0, 550-pixmap.height())
+        self.texture.setOffset(point)
+        self.texture.setPos(0, 0)
         self.x = 0
-        self.y = 550-pixmap.height()
-        self.texture.setZValue(1)
+        self.y = 0
+        self.texture.setZValue(1)  # TODO test
         self.texture.setOpacity(.5)
         if self.tool == 'move':
             self.texture.setFlag(QGraphicsItem.ItemIsMovable, True)
             self.texture.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.imageChangeSig.emit(pixmap)
 
+    def bedChanged(self, x, y):
+        self._xBed = x
+        self._yBed = y
+        self.updateCoord()
+        self.scene.update()
+
     def setOpacity(self, value):
         self.texture.setOpacity(value)
+        self.opacity = value
+        self.hidden = False
+
+    def hideUnhide(self):
+        if(self.hidden == True):
+            self.texture.setOpacity(self.opacity)
+            self.hidden = False
+        else:
+            self.texture.setOpacity(0)
+            self.hidden = True
+
+    def mouseMoveEvent(self, e):
+        # conversion px to mm
+        #self.x = (self.texture.scenePos().x()*self._xBed)/550
+        #self.y = -(self.texture.scenePos().y()*self._yBed)//550
+        self.imageChangeLocX.emit(
+            (self.texture.scenePos().x()*self._xBed)/550)
+        tmp = -((self.texture.scenePos().y()*self._yBed)//550)
+        self.imageChangeLocY.emit(tmp)
+        return super().mouseMoveEvent(e)
 
     def setTool(self, tool):
         if tool == 'move':
+            self.texture.setFlag(QGraphicsItem.ItemIsMovable, True)
+            self.texture.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        elif tool == 'scale':
             self.texture.setFlag(QGraphicsItem.ItemIsMovable, True)
             self.texture.setFlag(QGraphicsItem.ItemIsSelectable, True)
         else:
@@ -467,8 +566,10 @@ if __name__ == "__main__":
     import sys
     from PySide2.QtWidgets import QApplication
     app = QApplication(sys.argv)
-    iw = ImageWidget()
+    iw = TEST_docking()
+    # iw2 = ImageToolsWidget()
     Controller().match()
-    Controller().showConnections()
+    # Controller().showConnections()
     iw.show()
+    # iw2.show()
     sys.exit(app.exec_())

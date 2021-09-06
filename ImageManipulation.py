@@ -23,10 +23,13 @@ class ImageManipulation(QWidget):
         contr = Controller()
         contr.addRecive("2d/image/name", self.set_model_name)
         contr.addRecive("2d/image", self.set_image)
+        contr.addRecive("2d/image/location/x/set", self.set_x)
+        contr.addRecive("2d/image/location/y/set", self.set_y)
         contr.addSend("2d/image/off", self.imageChangeSig)
         contr.addSend("2d/image/contrast", self.contrastChangeSig)
         contr.addSend("2d/image/location/x", self.xImageLocationChangeSig)
         contr.addSend("2d/image/scale/x", self.xImageScaleChangeSig)
+        contr.addSend("2d/image/location/y", self.yImageLocationChangeSig)
 
         self.image = None
 
@@ -75,7 +78,7 @@ class ImageManipulation(QWidget):
         grid.addWidget(self.x_input, row, 1)
         self.y_input = QLineEdit("0")
         self.y_input.setValidator(double_validate)
-        # self.y_input.returnPressed.connect(self.send_y)
+        self.y_input.returnPressed.connect(self.send_y)
         grid.addWidget(self.y_input, row, 2)
         grid.addWidget(QLabel("mm"), row, 3)
 
@@ -157,9 +160,7 @@ class ImageManipulation(QWidget):
         self.imageChangeSig.emit(pixmap)
 
     def send_x(self):
-        # print(self.sender().text())
         tmp = float(self.sender().text())
-        #tmp = tmp*450/200
         self.xImageLocationChangeSig.emit(tmp)
 
     def send_y(self):
@@ -170,12 +171,12 @@ class ImageManipulation(QWidget):
         tmp = float(self.sender().text())
         self.xImageScaleChangeSig.emit(tmp)
 
-    def get_y(self):
-        #self.imageWidget.item1.setTransform(QTransform.fromScale(1, -1))
-        tmp = float(self.sender().text())
-        tmp = tmp*450/200
-        self.imageWidget.item1.setY(-tmp-256)
-
     def set_scale_x(self):
         tmp = int(self.sender().text())/100
         self.imageWidget.item1.setScale(tmp)
+
+    def set_x(self, value):
+        self.x_input.setText("{:.2f}".format(value))
+
+    def set_y(self, value):
+        self.y_input.setText("{:.2f}".format(value))

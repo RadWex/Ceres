@@ -171,7 +171,7 @@ class Controller(metaclass=ControllerMeta):
         debug.printSlots()
 
     def logConnections(self):
-        pass
+        pass  # TODO
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ from PySide2.QtGui import QKeySequence
 from TabsContainer import TabContainerWidget
 from SettingsWindow import SettingsWindow
 from Viewer3d import Model3dWidget
-from Viewer2d import ImageWidget
+from Viewer2d import ImageToolsWidget, ImageWidget
 from Controller import Controller
 
 
@@ -25,6 +25,7 @@ class MainWidget(QWidget):
         self.setAcceptDrops(True)
 
         mainWidgetsLayout = QHBoxLayout()
+        mainWidgetsLayout.addWidget(ImageToolsWidget())
         mainWidgetsLayout.addWidget(ImageWidget())
         mainWidgetsLayout.addWidget(Model3dWidget())
         mainWidgetsLayout.addWidget(TabContainerWidget())
@@ -54,8 +55,9 @@ class MainWidget(QWidget):
         slider = QSlider(Qt.Horizontal)
         slider.setMinimum(0)
         slider.setMaximum(100)
+        # trzeba dac recive, bo ta wartosc przechowuje viewer2d #TODO
         slider.setValue(50)
-        # slider.setMaximumWidth(20)
+        # slider.setMaximumWidth(20) #dostosowac wielkosc slidera
         slider.valueChanged.connect(self.opacityChange)
 
         return slider
@@ -67,6 +69,7 @@ class MainWidget(QWidget):
 
     # first_comboBox
     def initPrinterProfileComboBox(self):
+        # TODO
         combo = QComboBox()
         combo.addItem("Default")
         combo.addItem("Add new profile...")
@@ -75,6 +78,7 @@ class MainWidget(QWidget):
 
     # second_comboBox
     def initEngravingProfileComboBox(self):
+        # TODO
         combo = QComboBox()
         combo.addItem("Default")
         combo.addItem("Add new template...")
@@ -122,9 +126,10 @@ class MainWindow(QMainWindow):
         # central widget
         mainWidget = MainWidget()
         self.setCentralWidget(mainWidget)
-        # self.centerOnScreen()
+        # self.centerOnScreen() #TODO test is it working internaly(zakomentowac w main.py)
 
     def centerOnScreen(self):
+        # use by main.py
         resolution = QDesktopWidget().screenGeometry()
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
                   (resolution.height() / 2) - (self.frameSize().height() / 2))
