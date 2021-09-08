@@ -73,6 +73,7 @@ class TransformationMatrixManager(QObject):
         contr.addRecive("3d/model/scale/x", self.set_x_scale)
         contr.addRecive("3d/model/scale/y", self.set_y_scale)
         contr.addRecive("3d/model/scale/z", self.set_z_scale)
+        contr.addRecive("3d/bedSize", self.set_bed)
         self.send = ToModelManipulation()
         self.bedX = 0
         self.bedY = 0
@@ -90,6 +91,10 @@ class TransformationMatrixManager(QObject):
         settings = Settings()
         self.bedX = float(settings.printerSettings['bed_size_x'])
         self.bedY = float(settings.printerSettings['bed_size_x'])
+
+    def set_bed(self, x, y):
+        self.bedX = x
+        self.bedY = y
 
     @Property(str, notify=modelChanged)
     def modelChange(self):
@@ -304,7 +309,7 @@ class BedManager(QObject):
         return self._yBed
 
     def set_bed(self, new_x, new_y):
-        print("New bed", new_x, new_y)
+        #print("New bed", new_x, new_y)
         self._xBed = new_x
         self.xBedChanged.emit(new_x)
         self._yBed = new_y
@@ -379,16 +384,21 @@ class CameraManager(QObject):
 
     def __init__(self, parent=None):
         super(CameraManager, self).__init__(parent)
+        self.loadSettings()
         contr = Controller()
         contr.addRecive("3d/camera/position/home", self.set_camera_home)
         contr.addRecive("3d/camera/position/top", self.set_camera_top)
         contr.addRecive("3d/camera/position/bottom", self.set_camera_bottom)
-        #contr.addRecive("3d/camera/position/front", self.set_camera_front)
-        #contr.addRecive("3d/camera/position/back", self.set_camera_back)
-        #contr.addRecive("3d/camera/position/left", self.set_camera_left)
-        #contr.addRecive("3d/camera/position/right", self.set_camera_right)
-        self.loadSettings()
-        self._position = QVector3D(self._xBed/2, 300.0, 300.0)
+        contr.addRecive("3d/camera/position/front", self.set_camera_front)
+        contr.addRecive("3d/camera/position/back", self.set_camera_back)
+        contr.addRecive("3d/camera/position/left", self.set_camera_left)
+        contr.addRecive("3d/camera/position/right", self.set_camera_right)
+        contr.addRecive("3d/bedSize", self.set_bed)
+        bed_longer_edge = self._xBed if self._xBed > self._yBed else self._yBed
+        bed_longer_edge *= 1.5
+        self._position = QVector3D(self._xBed/2,
+                                   bed_longer_edge,
+                                   bed_longer_edge)
         self._view = QVector3D(self._xBed/2, 0.0, -self._yBed/2)
         self._rotation = QVector3D(0.0, 1.0, 0.0)  # tilt of camera
 
@@ -403,6 +413,11 @@ class CameraManager(QObject):
     @Property(QVector3D, notify=upVectorChangeSig)
     def rotation(self):
         return self._rotation
+
+    def set_bed(self, new_x, new_y):
+        self._xBed = new_x
+        self._yBed = new_y
+        self.set_camera_home()
 
     def set_camera(self, position: QVector3D, view: QVector3D, rotation: QVector3D):
         self._position = position
@@ -430,11 +445,33 @@ class CameraManager(QObject):
 
     def set_camera_bottom(self):
         p = QVector3D(self._xBed/2, -500.0, -self._yBed/2)
-        self._position = p
+        v = QVector3D(self._xBed/2, 0.0, -self._yBed/2)
         r = QVector3D(0.0, 0.0, 1.0)
-        self._rotation = r
-        self.positionVectorChangeSig.emit(p)
-        self.upVectorChangeSig.emit(r)  # rotation reset
+        self.set_camera(p, v, r)
+
+    def set_camera_front(self):
+        p = QVector3D(self._xBed/2, 0.0, 500)
+        v = QVector3D(self._xBed/2, 0.0, -self._yBed/2)
+        r = QVector3D(0.0, 1.0, 0.0)
+        self.set_camera(p, v, r)
+
+    def set_camera_back(self):
+        p = QVector3D(self._xBed/2, 0.0, -500-self._yBed)
+        v = QVector3D(self._xBed/2, 0.0, -self._yBed/2)
+        r = QVector3D(0.0, 1.0, 0.0)
+        self.set_camera(p, v, r)
+
+    def set_camera_left(self):
+        p = QVector3D(-500, 0.0, -self._yBed/2)
+        v = QVector3D(self._xBed/2, 0.0, -self._yBed/2)
+        r = QVector3D(0.0, 1.0, 0.0)
+        self.set_camera(p, v, r)
+
+    def set_camera_right(self):
+        p = QVector3D(500+self._xBed, 0.0, -self._yBed/2)
+        v = QVector3D(self._xBed/2, 0.0, -self._yBed/2)
+        r = QVector3D(0.0, 1.0, 0.0)
+        self.set_camera(p, v, r)
 
     def loadSettings(self):
         settings = Settings()
@@ -467,7 +504,7 @@ class Model3dWidget(QQuickWidget):
         self.setSource(QUrl.fromLocalFile("qml/main.qml"))
         self.setResizeMode(QQuickWidget.SizeRootObjectToView)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        print("QQuickWidget size ->", self.size())
+        #print("QQuickWidget size ->", self.size())
 
     def dragMoveEvent(self, e):
         e.acceptProposedAction()

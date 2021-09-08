@@ -80,10 +80,9 @@ Entity {
             right: window_manager.xBed/2
             bottom: -window_manager.yBed/2
             top: window_manager.yBed/2
-            position: Qt.vector3d(100.0, 100.0, -100.0)
+            position: Qt.vector3d(window_manager.xBed/2, 100.0, -window_manager.yBed/2)
             //upVector: Qt.vector3d(0.0, 1.0, 0.0)
-            
-            viewCenter: Qt.vector3d(100.0, 0.0, -100.0)
+            viewCenter: Qt.vector3d(window_manager.xBed/2, 0.0, -window_manager.yBed/2)
         }
     }
 
