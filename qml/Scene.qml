@@ -65,8 +65,8 @@ Entity {
             nearPlane: 0.1
             farPlane: 2000.0
             position: cameraManager.position
-            //upVector: Qt.vector3d(-100.0, 0.0, -100.0)
             viewCenter: cameraManager.view
+            upVector: cameraManager.rotation
             //onPositionChanged: { console.log(camera.viewMatrix)}
         }
 
