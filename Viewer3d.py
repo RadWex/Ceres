@@ -529,3 +529,13 @@ class Model3dWidget(QQuickWidget):
         else:
             self.imageChangeNameSig.emit(name)
             self.imageChangePathSig.emit(fname)
+
+
+if __name__ == "__main__":
+    import sys
+    from PySide2.QtWidgets import QApplication
+    app = QApplication(sys.argv)
+    iw = Model3dWidget()
+    Controller().match()
+    iw.show()
+    sys.exit(app.exec_())

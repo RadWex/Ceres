@@ -43,7 +43,7 @@ Entity {
         return quadViewportFrameGraph.renCap.requestCapture()
     }
 
-    components: [quadViewportFrameGraph, inputSettings, raycaster]
+    components: [quadViewportFrameGraph, inputSettings/*, raycaster*/]
 
     QuadViewportFrameGraph {
         id: quadViewportFrameGraph
@@ -75,12 +75,12 @@ Entity {
             projectionType: CameraLens.OrthographicProjection
 
             nearPlane: 0.1
-            farPlane: 1000.0
+            farPlane: 2000.0
             left: -window_manager.xBed/2
             right: window_manager.xBed/2
             bottom: -window_manager.yBed/2
             top: window_manager.yBed/2
-            position: Qt.vector3d(window_manager.xBed/2, 100.0, -window_manager.yBed/2)
+            position: Qt.vector3d(window_manager.xBed/2, 1000.0, -window_manager.yBed/2)
             //upVector: Qt.vector3d(0.0, 1.0, 0.0)
             viewCenter: Qt.vector3d(window_manager.xBed/2, 0.0, -window_manager.yBed/2)
         }

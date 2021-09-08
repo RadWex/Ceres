@@ -451,7 +451,7 @@ class Image2dView(QGraphicsView):
     def set_x(self, x):
         # translation mm to px
         self.x = (550*x)/self._xBed
-        print(self.x)
+        # print(self.x)
         self.updateCoord()
 
     def set_y(self, y):
