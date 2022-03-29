@@ -1,4 +1,5 @@
 # This Python file uses the following encoding: utf-8
+from PySide2.QtCore import Signal
 import configparser
 import pathlib
 
@@ -18,24 +19,29 @@ class SettingsMeta(type):
 
 
 class Settings(metaclass=SettingsMeta):
+    a = Signal(float, float)
     printerSettings = {
+        "default"
+    }
+    default = {
         "bed_size_x": '200',
         "bed_size_y": '200',
         "origin_x": '0',
-        "origin_y": '0'
-    }
-    laserSettings = {
+        "origin_y": '0',
         "w": '0',
         "h": '40',
         "d": '0'
     }
+    activePrinterPreset = 'default'
     gcode = {
         "start": """G28 ; home all axes\nG1 Z5 F1500 ; lift nozzle""",
         "end": """G28 X0  ; home X axis\nM84 ; disable motors"""
     }
 
+    listOfPrinterPresets = {}
+
     def __init__(self):
-        self.config = configparser.ConfigParser()
+        self.config = configparser.ConfigParser(allow_no_value=True)
         file = pathlib.Path("config.ini")
         if not file.exists():
             self.create()
@@ -43,15 +49,33 @@ class Settings(metaclass=SettingsMeta):
         self.config.read(file)
 
         if self.config.has_section("printer settings"):
-            for key, val in self.config.items("printer settings"):
-                if key in self.printerSettings and self.is_number(val):
-                    self.printerSettings[key] = val
+            for name_of_settings, _ in self.config.items("printer settings"):
+                data = {}
+                for key, val in self.config.items(name_of_settings):
+                    data[key] = val
+                self.listOfPrinterPresets[name_of_settings] = data
+        # if self.config.has_section("printer settings"):
+        #     for key, val in self.config.items("printer settings"):
+        #         if key in self.printerSettings and self.is_number(val):
+        #             self.printerSettings[key] = val
         if self.config.has_section("G-code"):
             for key, val in self.config.items("G-code"):
-                if key in self.gcode:
+                if key in self.gcode and self.is_number(val):
                     self.gcode[key] = val
+        if self.config.has_section("last printer preset"):
+            key = self.config.items("last printer preset")
+            self.activePrinterPreset = key[0][0]
 
-    def save(self):
+    def save_printer_preset_name(self, name):
+        if self.config.has_section("printer settings"):
+            self.config.add_section(name)
+            self.config.set('printer settings', name)
+            for key in self.default.keys():
+                self.config.set(name, key, self.default[key])
+            with open('config.ini', 'w') as configfile:
+                self.config.write(configfile)
+
+    def save_printer_preset(self, settings: dict):
         pass
 
     def create(self):
@@ -64,6 +88,12 @@ class Settings(metaclass=SettingsMeta):
         with open('config.ini', 'w') as configfile:
             self.config.write(configfile)
 
+    def get_printer_preset_by_name(self, name) -> dict:
+        for i in self.listOfPrinterPresets.keys():
+            if i == name:
+                return i
+        print('[ERROR]Settings not found')
+
     def is_number(self, s):
         s = s.replace(',', '.')
         try:
@@ -75,4 +105,7 @@ class Settings(metaclass=SettingsMeta):
 
 if __name__ == "__main__":
     s = Settings()
-    print(s.printerSettings)
+    # print(s.printerSettings)
+    # print(f'{s.listOfPrinterPresets}')
+    # print(s.get_printer_settings_by_name('test'))
+    print(s.listOfPrinterPresets[s.activePrinterPreset])

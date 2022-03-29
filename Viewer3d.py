@@ -89,8 +89,9 @@ class TransformationMatrixManager(QObject):
 
     def loadSettings(self):
         settings = Settings()
-        self.bedX = float(settings.printerSettings['bed_size_x'])
-        self.bedY = float(settings.printerSettings['bed_size_x'])
+        dict = settings.listOfPrinterPresets[settings.activePrinterPreset]
+        self._xBed = float(dict['bed_size_x'])
+        self._yBed = float(dict['bed_size_y'])
 
     def set_bed(self, x, y):
         self.bedX = x
@@ -297,8 +298,9 @@ class BedManager(QObject):
 
     def loadSettings(self):
         settings = Settings()
-        self._xBed = float(settings.printerSettings['bed_size_x'])
-        self._yBed = float(settings.printerSettings['bed_size_y'])
+        dict = settings.listOfPrinterPresets[settings.activePrinterPreset]
+        self._xBed = float(dict['bed_size_x'])
+        self._yBed = float(dict['bed_size_y'])
 
     @Property(float, notify=xBedChanged)
     def xBed(self):
@@ -475,8 +477,9 @@ class CameraManager(QObject):
 
     def loadSettings(self):
         settings = Settings()
-        self._xBed = float(settings.printerSettings['bed_size_x'])
-        self._yBed = float(settings.printerSettings['bed_size_y'])
+        dict = settings.listOfPrinterPresets[settings.activePrinterPreset]
+        self._xBed = float(dict['bed_size_x'])
+        self._yBed = float(dict['bed_size_y'])
 
 
 class Model3dWidget(QQuickWidget):

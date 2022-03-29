@@ -6,7 +6,7 @@ from PySide2.QtWidgets import (QMainWindow, QStatusBar,
                                QHBoxLayout, QVBoxLayout,
                                QGroupBox, QComboBox,
                                QDoubleSpinBox, QSizePolicy,
-                               QDesktopWidget)
+                               QMessageBox, QInputDialog)
 from PySide2.QtGui import QDoubleValidator, Qt
 from PySide2.QtCore import Signal
 from PySide2.QtGui import QImage, QPixmap
@@ -23,7 +23,9 @@ class SettingsWindow(QWidget):
         contr = Controller()
         contr.addTempSend("3d/bedSize", self.bedSizeChangeSig)
 
+        self.settings = Settings()
         self.setWindowTitle("Printer Settings")
+        self.combo = QComboBox()
 
         settingsLayout = QVBoxLayout()
         settingsLayout.addWidget(self.initBedSettings())
@@ -43,24 +45,26 @@ class SettingsWindow(QWidget):
         self.setLayout(mainLayout)
 
     def initTopButtons(self):
-        combo = QComboBox()
-        combo.addItem("Default")
-        combo.addItem("Add new profile...")
+        self.combo = QComboBox()
+        for i in self.settings.listOfPrinterPresets.keys():
+            self.combo.addItem(i)
+        self.combo.addItem("Add new profile...")
         sizePolicy = QSizePolicy()
         sizePolicy.setHorizontalPolicy(QSizePolicy.Expanding)
-        combo.setSizePolicy(sizePolicy)
+        self.combo.setSizePolicy(sizePolicy)
 
         layout = QHBoxLayout()
         layout.addWidget(QLabel("Printer type:"))
-        layout.addWidget(combo)
+        layout.addWidget(self.combo)
         layout.addWidget(QPushButton("Remove"))
         layout.addWidget(QPushButton("Export"))
+
+        self.combo.activated[str].connect(self.selection_change)
 
         return layout
 
     def initBedSettings(self):
-        settings = Settings()
-        con = settings.printerSettings
+        con = self.settings.listOfPrinterPresets[self.settings.activePrinterPreset]
 
         grid = QGridLayout()
         grid.addWidget(QLabel("Bed Size:"), 0, 0)
@@ -100,8 +104,7 @@ class SettingsWindow(QWidget):
         return groupbox
 
     def initLaserSettings(self):
-        settings = Settings()
-        con = settings.laserSettings
+        con = self.settings.listOfPrinterPresets[self.settings.activePrinterPreset]
 
         grid = QGridLayout()
         grid.addWidget(QLabel("W:"), 0, 0)
@@ -133,6 +136,7 @@ class SettingsWindow(QWidget):
 
     def initBottomButtons(self):
         addButton = QPushButton('Add')
+        addButton.clicked.connect(self.dialog_create_preset)
         importButton = QPushButton('Import')
         saveButton = QPushButton('Save')
         saveButton.clicked.connect(self.set_printer_settings)
@@ -148,8 +152,7 @@ class SettingsWindow(QWidget):
         return buttonsLayout
 
     def set_printer_settings(self):
-        settings = Settings()
-        con = settings.printerSettings
+        con = self.settings.listOfPrinterPresets[self.settings.activePrinterPreset]
         bedX = self.bedSizeX.value()
         bedY = self.bedSizeY.value()
         con['bed_size_x'] = str(bedX)
@@ -158,5 +161,32 @@ class SettingsWindow(QWidget):
         con['origin_y'] = str(self.originY.text())
         self.bedSizeChangeSig.emit(float(bedX), float(bedY))
         self.bedSizeChangeSig.disconnect()
-        settings.save()
         self.close()
+
+    def selection_change(self, selected):
+        if selected == "Add new profile...":
+            self.dialog_create_preset()
+        else:
+            self.settings.activePrinterPreset = selected
+            self.change_settings()
+
+    def change_settings(self):
+        con = self.settings.listOfPrinterPresets[self.settings.activePrinterPreset]
+        self.bedSizeX.setValue(float(con['bed_size_x']))
+        self.bedSizeY.setValue(float(con['bed_size_y']))
+
+    def dialog_create_preset(self):
+        text, ok = QInputDialog.getText(
+            self, 'Create preset', 'Save Printer Settings as:')
+        if ok:
+            for i in self.settings.listOfPrinterPresets.keys():
+                if i == text:
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Critical)
+                    msg.setText("This name is already taken")
+                    retval = msg.exec_()
+                    return
+            index = self.combo.count() - 1
+            self.combo.insertItem(index, str(text))
+            self.combo.setCurrentIndex(index)
+            self.settings.save_printer_preset_name(str(text))

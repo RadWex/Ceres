@@ -115,8 +115,9 @@ class RulerWidget(QWidget):
 
     def loadSettings(self):
         settings = Settings()
-        self._xBed = float(settings.printerSettings['bed_size_x'])
-        self._yBed = float(settings.printerSettings['bed_size_y'])
+        dict = settings.listOfPrinterPresets[settings.activePrinterPreset]
+        self._xBed = float(dict['bed_size_x'])
+        self._yBed = float(dict['bed_size_y'])
 
     def set_bed(self, new_x, new_y):
         self._xBed = new_x
@@ -354,10 +355,10 @@ class ImageWidget(QWidget):
         layout.addWidget(img, 1, 1)
         layout.setContentsMargins(0, 0, 0, 0)
         # DEBUG
-        img.openImage("1.png")
-        img.set_x(20)
-        img.set_y(40)
-        img.set_scale(20)
+        # img.openImage("1.png")
+        # img.set_x(20)
+        # img.set_y(40)
+        # img.set_scale(20)
         ###
         self.setLayout(layout)
 
@@ -416,6 +417,7 @@ class Image2dView(QGraphicsView):
         self.setScene(self.scene)
         self.x = 0
         self.y = 0
+        self.scalee = 1
         self.loadSettings()
 
     def drawBackground(self, painter, rect):
@@ -424,8 +426,9 @@ class Image2dView(QGraphicsView):
 
     def loadSettings(self):
         settings = Settings()
-        self._xBed = float(settings.printerSettings['bed_size_x'])
-        self._yBed = float(settings.printerSettings['bed_size_y'])
+        dict = settings.listOfPrinterPresets[settings.activePrinterPreset]
+        self._xBed = float(dict['bed_size_x'])
+        self._yBed = float(dict['bed_size_y'])
 
     '''
     def wheelEvent(self, event):
@@ -461,9 +464,10 @@ class Image2dView(QGraphicsView):
 
     def set_scale(self, scale):
         scale = scale/100
-        self.scale = scale
+        self.scalee = scale
         self.texture.setTransformOriginPoint(0, 550)
         self.texture.setScale(scale)
+
         #point = QPointF(0, (550-self.ph*scale))
         # self.texture.setOffset(point)
         # self.y = 550-self.texture.height()
@@ -520,7 +524,11 @@ class Image2dView(QGraphicsView):
         #self.y = -(self.texture.scenePos().y()*self._yBed)//550
         self.imageChangeLocX.emit(
             (self.texture.scenePos().x()*self._xBed)/550)
-        tmp = -((self.texture.scenePos().y()*self._yBed)//550)
+        # print("x="+str(self.texture.scenePos().x()))
+        # print("y="+str(self.texture.scenePos().y()+self.scalee*550-550))
+        fix = self.texture.scenePos().y()+self.scalee*550-550
+        tmp = -((fix*self._yBed)//550)
+
         self.imageChangeLocY.emit(tmp)
         return super().mouseMoveEvent(e)
 
