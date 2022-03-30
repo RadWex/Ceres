@@ -12,17 +12,22 @@ from SettingsWindow import SettingsWindow
 from Viewer3d import Model3dWidget
 from Viewer2d import ImageToolsWidget, ImageWidget
 from Controller import Controller
+from Settings import Settings
 
 
 class MainWidget(QWidget):
     opacityChangeSig = Signal(float)
+    bedSizeChangeSig = Signal(float, float)
 
     def __init__(self):
         super().__init__()
         contr = Controller()
         contr.addSend("2d/image/opacity", self.opacityChangeSig)
-
+        contr.addSend("3d/bedSize", self.bedSizeChangeSig)
+        contr.addRecive("profile", self.profile_change)
         self.setAcceptDrops(True)
+
+        self.settings = Settings()
 
         mainWidgetsLayout = QHBoxLayout()
         mainWidgetsLayout.addWidget(ImageToolsWidget())
@@ -43,10 +48,10 @@ class MainWidget(QWidget):
         layout.addWidget(self.initSlider())
         layout.addWidget(QLabel("Printer:"))
         layout.addWidget(self.initPrinterProfileComboBox())
-        layout.addWidget(QLabel("Template:"))
-        layout.addWidget(self.initEngravingProfileComboBox())
+        # layout.addWidget(QLabel("Template:"))
+        # layout.addWidget(self.initEngravingProfileComboBox())
         layout.addStretch(1)
-        #groupbox = QGroupBox(self)
+        # groupbox = QGroupBox(self)
         # groupbox.setLayout(layout)
         return layout
 
@@ -69,11 +74,14 @@ class MainWidget(QWidget):
 
     # first_comboBox
     def initPrinterProfileComboBox(self):
-        # TODO
-        combo = QComboBox()
-        combo.addItem("Default")
-        combo.addItem("Add new profile...")
-        return combo
+        self.combo = QComboBox()
+
+        for i in self.settings.listOfPrinterPresets.keys():
+            self.combo.addItem(i)
+        self.combo.setCurrentText(self.settings.activePrinterPreset)
+        self.combo.activated[str].connect(self.selection_change)
+
+        return self.combo
     # end_of_first_comboBox
 
     # second_comboBox
@@ -84,6 +92,22 @@ class MainWidget(QWidget):
         combo.addItem("Add new template...")
         return combo
     # end_of_second_comboBox
+
+    def profile_change(self, txt):
+        self.combo.setCurrentText(self.settings.activePrinterPreset)
+
+    def selection_change(self, selected):
+        self.settings.activePrinterPreset = selected
+        self.change_settings()
+
+    def change_settings(self):
+        con = self.settings.listOfPrinterPresets[self.settings.activePrinterPreset]
+        self.bedSizeChangeSig.emit(
+            float(con['bed_size_x']), float(con['bed_size_y']))
+
+    def exit(self):
+        settings = Settings()
+        settings.save_active_printer_preset(str(self.combo.currentText()))
 
 
 class MainWindow(QMainWindow):
@@ -114,7 +138,7 @@ class MainWindow(QMainWindow):
         contr.addSend("2d/image/path", self.imageChangePathSig)
         contr.addSend("2d/image/name", self.imageChangeNameSig)
 
-        self.initialize_menu_bar()
+        self.initializeMenuBar()
         self.setWindowTitle("Ceres")
         self.setAcceptDrops(True)
 
@@ -124,17 +148,17 @@ class MainWindow(QMainWindow):
         self.statusBar.showMessage("Ready")
 
         # central widget
-        mainWidget = MainWidget()
-        self.setCentralWidget(mainWidget)
+        self.mainWidget = MainWidget()
+        self.setCentralWidget(self.mainWidget)
         # self.centerOnScreen() #TODO test is it working internaly(zakomentowac w main.py)
 
     def centerOnScreen(self):
-        # use by main.py
+        # used by main.py
         resolution = QDesktopWidget().screenGeometry()
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
                   (resolution.height() / 2) - (self.frameSize().height() / 2))
 
-    def initialize_menu_bar(self):
+    def initializeMenuBar(self):
         menu_bar = QMenuBar()
         self.setMenuBar(menu_bar)
         file_menu = menu_bar.addMenu("&File")
@@ -144,7 +168,7 @@ class MainWindow(QMainWindow):
         openImageAction = QAction("Open image", self)
 
         importModelAction = QAction("Import model...", self)
-        importModelAction.triggered.connect(self.getfile)
+        importModelAction.triggered.connect(self.getFile)
         exitAction = QAction("Quit", self)
         exitAction.triggered.connect(qApp.quit)
 
@@ -155,10 +179,7 @@ class MainWindow(QMainWindow):
         settingsOpenAction = QAction("Printer settings", self)
         settingsOpenAction.triggered.connect(self.openSettingsWindow)
 
-        preferencesOpenAction = QAction("Preferences...", self)
-
         edit_menu.addAction(settingsOpenAction)
-        edit_menu.addAction(preferencesOpenAction)
 
         homeView = QAction("Home", self)
         homeView.setShortcut(QKeySequence("0"))
@@ -190,7 +211,7 @@ class MainWindow(QMainWindow):
         view_menu.addAction(leftView)
         view_menu.addAction(rightView)
 
-    def getfile(self):
+    def getFile(self):
         fname, tmp = QFileDialog.getOpenFileName(self, 'Open file',
                                                  '', "Model files (*.obj *.stl *.ply)")
         tmp = fname.rsplit('/', 1)
@@ -223,3 +244,7 @@ class MainWindow(QMainWindow):
         else:
             self.imageChangeNameSig.emit(name)
             self.imageChangePathSig.emit(fname)
+
+    def closeEvent(self, e):
+        self.mainWidget.exit()
+        return super().closeEvent(e)

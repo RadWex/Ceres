@@ -17,11 +17,13 @@ import sys
 
 class SettingsWindow(QWidget):
     bedSizeChangeSig = Signal(float, float)
+    profileChangeSig = Signal(str)
 
     def __init__(self, parent):
         super().__init__()
         contr = Controller()
         contr.addTempSend("3d/bedSize", self.bedSizeChangeSig)
+        contr.addTempSend("profile", self.profileChangeSig)
 
         self.settings = Settings()
         self.setWindowTitle("Printer Settings")
@@ -49,14 +51,17 @@ class SettingsWindow(QWidget):
         for i in self.settings.listOfPrinterPresets.keys():
             self.combo.addItem(i)
         self.combo.addItem("Add new profile...")
+        self.combo.setCurrentText(self.settings.activePrinterPreset)
         sizePolicy = QSizePolicy()
         sizePolicy.setHorizontalPolicy(QSizePolicy.Expanding)
         self.combo.setSizePolicy(sizePolicy)
 
+        removeButton = QPushButton("Remove")
+        removeButton.clicked.connect(self.deleteProfile)
         layout = QHBoxLayout()
         layout.addWidget(QLabel("Printer type:"))
         layout.addWidget(self.combo)
-        layout.addWidget(QPushButton("Remove"))
+        layout.addWidget(removeButton)
         layout.addWidget(QPushButton("Export"))
 
         self.combo.activated[str].connect(self.selection_change)
@@ -160,6 +165,7 @@ class SettingsWindow(QWidget):
         con['origin_x'] = str(self.originX.text())
         con['origin_y'] = str(self.originY.text())
         self.bedSizeChangeSig.emit(float(bedX), float(bedY))
+        self.profileChangeSig.emit(con)
         self.bedSizeChangeSig.disconnect()
         self.close()
 
@@ -190,3 +196,6 @@ class SettingsWindow(QWidget):
             self.combo.insertItem(index, str(text))
             self.combo.setCurrentIndex(index)
             self.settings.save_printer_preset_name(str(text))
+
+    def deleteProfile(self):
+        self.settings.remove_section(self.settings.activePrinterPreset)

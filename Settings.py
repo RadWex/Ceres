@@ -75,8 +75,19 @@ class Settings(metaclass=SettingsMeta):
             with open('config.ini', 'w') as configfile:
                 self.config.write(configfile)
 
-    def save_printer_preset(self, settings: dict):
-        pass
+    def save_active_printer_preset(self, name):
+        if self.config.has_section('last printer preset'):
+            self.config.remove_section('last printer preset')
+            self.config.add_section('last printer preset')
+            self.config.set('last printer preset', name)
+            with open('config.ini', 'w') as configfile:
+                self.config.write(configfile)
+
+    def remove_section(self, name: str):
+        if self.config.has_section(name):
+            self.config.remove_section(name)
+            with open('config.ini', 'w') as configfile:
+                self.config.write(configfile)
 
     def create(self):
         self.config.add_section('printer settings')
