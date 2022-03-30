@@ -213,7 +213,7 @@ class MainWindow(QMainWindow):
 
     def getFile(self):
         fname, tmp = QFileDialog.getOpenFileName(self, 'Open file',
-                                                 '', "Model files (*.obj *.stl *.ply)")
+                                                 '', "Model files (*.obj *.stl *.ply)", options=QFileDialog.DontUseNativeDialog)
         tmp = fname.rsplit('/', 1)
         self.modelChangeNameSig.emit(tmp[-1])
         self.modelChangePathSig.emit("file:///"+fname)
