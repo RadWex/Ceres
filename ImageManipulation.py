@@ -15,8 +15,9 @@ class ImageManipulation(QWidget):
     contrastChangeSig = Signal(int)
     imageChangeSig = Signal(QPixmap)
     xImageLocationChangeSig = Signal(float)
-    xImageScaleChangeSig = Signal(float)
+    imageScaleChangeSig = Signal(float)
     yImageLocationChangeSig = Signal(float)
+    imageRotateChangeSig = Signal(float)
 
     def __init__(self):
         super().__init__()
@@ -25,11 +26,14 @@ class ImageManipulation(QWidget):
         contr.addRecive("2d/image", self.set_image)
         contr.addRecive("2d/image/location/x/set", self.set_x)
         contr.addRecive("2d/image/location/y/set", self.set_y)
+        contr.addRecive("2d/image/scale/set", self.set_scale)
+        contr.addRecive("2d/image/rotation/set", self.set_rotation)
         contr.addSend("2d/image/off", self.imageChangeSig)
         contr.addSend("2d/image/contrast", self.contrastChangeSig)
         contr.addSend("2d/image/location/x", self.xImageLocationChangeSig)
-        contr.addSend("2d/image/scale/x", self.xImageScaleChangeSig)
         contr.addSend("2d/image/location/y", self.yImageLocationChangeSig)
+        contr.addSend("2d/image/scale", self.imageScaleChangeSig)
+        contr.addSend("2d/image/rotation", self.imageRotateChangeSig)
 
         self.image = None
 
@@ -87,16 +91,16 @@ class ImageManipulation(QWidget):
         double_validate = QDoubleValidator()
         self.x_rot_input = QLineEdit("0")
         self.x_rot_input.setValidator(double_validate)
-        # self.x_rot_input.returnPressed.connect(self.send_rot_x)
+        self.x_rot_input.returnPressed.connect(self.send_rotation)
         grid.addWidget(self.x_rot_input, row, 1)
         grid.addWidget(QLabel("°"), row, 2)
 
     def initScaleFields(self, grid, row):
-        grid.addWidget(QLabel("Scale factors:"), row, 0)
+        grid.addWidget(QLabel("Scale factor:"), row, 0)
         double_validate = QDoubleValidator()
         self.x_scale_input = QLineEdit("100")
         self.x_scale_input.setValidator(double_validate)
-        self.x_scale_input.returnPressed.connect(self.send_scale_x)
+        self.x_scale_input.returnPressed.connect(self.send_scale)
         grid.addWidget(self.x_scale_input, row, 1)
         grid.addWidget(QLabel("%"), row, 2)
 
@@ -159,6 +163,7 @@ class ImageManipulation(QWidget):
         pixmap = QPixmap.fromImage(img)
         self.imageChangeSig.emit(pixmap)
 
+    # getters
     def send_x(self):
         tmp = float(self.sender().text())
         self.xImageLocationChangeSig.emit(tmp)
@@ -167,16 +172,23 @@ class ImageManipulation(QWidget):
         tmp = float(self.sender().text())
         self.yImageLocationChangeSig.emit(tmp)
 
-    def send_scale_x(self):
+    def send_scale(self):
         tmp = float(self.sender().text())
-        self.xImageScaleChangeSig.emit(tmp)
+        self.imageScaleChangeSig.emit(tmp)
 
-    def set_scale_x(self):
-        tmp = int(self.sender().text())/100
-        self.imageWidget.item1.setScale(tmp)
+    def send_rotation(self):
+        tmp = float(self.sender().text())
+        self.imageRotateChangeSig.emit(tmp)
 
+    # setters
     def set_x(self, value):
         self.x_input.setText("{:.2f}".format(value))
 
     def set_y(self, value):
         self.y_input.setText("{:.2f}".format(value))
+
+    def set_scale(self, value):
+        self.x_scale_input.setText("{:.2f}".format(value))
+
+    def set_rotation(self, value):
+        self.x_rot_input.setText("{:.2f}".format(value))

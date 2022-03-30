@@ -371,6 +371,8 @@ class Image2dView(QGraphicsView):
     imageChangeSig = Signal(QPixmap)
     imageChangeLocX = Signal(float)
     imageChangeLocY = Signal(float)
+    imageChangeScale = Signal(float)
+    imageChangeRotation = Signal(float)
 
     def __init__(self, sizeX, sizeY):
         super().__init__()
@@ -382,7 +384,8 @@ class Image2dView(QGraphicsView):
         contr.addRecive("2d/image/off", self.updateImage)
         contr.addRecive("2d/image/location/x", self.set_x)
         contr.addRecive("2d/image/location/y", self.set_y)
-        contr.addRecive("2d/image/scale/x", self.set_scale)
+        contr.addRecive("2d/image/scale", self.set_scale)
+        contr.addRecive("2d/image/rotation", self.set_rotation)
         contr.addSend("2d/image", self.imageChangeSig)
         contr.addSend("3d/model/path", self.modelChangePathSig)
         contr.addSend("3d/model/name", self.modelChangeNameSig)
@@ -390,6 +393,8 @@ class Image2dView(QGraphicsView):
         contr.addSend("2d/image/name", self.imageChangeNameSig)
         contr.addSend("2d/image/location/x/set", self.imageChangeLocX)
         contr.addSend("2d/image/location/y/set", self.imageChangeLocY)
+        contr.addSend("2d/image/scale/set", self.imageChangeScale)
+        contr.addSend("2d/image/rotation/set", self.imageChangeRotation)
         contr.addRecive('3d/view/top', self.addCameraImage)
         contr.addRecive("3d/bedSize", self.bedChanged)
 
@@ -418,6 +423,8 @@ class Image2dView(QGraphicsView):
         self.x = 0
         self.y = 0
         self.scalee = 1
+        self.rotation = 0
+        self.dragstart = None
         self.loadSettings()
 
     def drawBackground(self, painter, rect):
@@ -459,7 +466,7 @@ class Image2dView(QGraphicsView):
 
     def set_y(self, y):
         # translation mm to px
-        self.y = -(550*y)//self._yBed
+        self.y = -(550*y)/self._yBed
         self.updateCoord()
 
     def set_scale(self, scale):
@@ -472,6 +479,11 @@ class Image2dView(QGraphicsView):
         # self.texture.setOffset(point)
         # self.y = 550-self.texture.height()
         # self.scene.update()
+
+    def set_rotation(self, angle):
+        self.texture.setTransformOriginPoint(0, 550)
+        self.rotation = angle
+        self.texture.setRotation(angle)
 
     def updateImage(self, image):
         self.texture.setPixmap(image)
@@ -518,25 +530,48 @@ class Image2dView(QGraphicsView):
             self.texture.setOpacity(0)
             self.hidden = True
 
-    def mouseMoveEvent(self, e):
-        # conversion px to mm
-        #self.x = (self.texture.scenePos().x()*self._xBed)/550
-        #self.y = -(self.texture.scenePos().y()*self._yBed)//550
-        self.imageChangeLocX.emit(
-            (self.texture.scenePos().x()*self._xBed)/550)
-        # print("x="+str(self.texture.scenePos().x()))
-        # print("y="+str(self.texture.scenePos().y()+self.scalee*550-550))
-        fix = self.texture.scenePos().y()+self.scalee*550-550
-        tmp = -((fix*self._yBed)//550)
+    def mousePressEvent(self, e):
+        if e.buttons() & Qt.LeftButton:
+            self.dragstart = e.pos()
+            self.dragstartScale = self.scalee*100
+            self.dragstartRotation = self.rotation
+        return super().mousePressEvent(e)
 
-        self.imageChangeLocY.emit(tmp)
+    def mouseReleaseEvent(self, e):
+        self.dragstart = None
+        return super().mouseReleaseEvent(e)
+
+    def mouseMoveEvent(self, e):
+        mousePosX = e.pos().x()
+        if self.tool == 'scale' and self.dragstart is not None:
+            xIncline = mousePosX - self.dragstart.x()
+            new_scale = self.dragstartScale+(xIncline*0.1)
+            self.set_scale(new_scale)
+            self.imageChangeScale.emit(new_scale)
+        elif self.tool == 'rotation' and self.dragstart is not None:
+            xIncline = mousePosX - self.dragstart.x()
+            new_rot = self.dragstartRotation+(xIncline*0.1)
+            self.set_rotation(new_rot)
+            self.imageChangeRotation.emit(new_rot)
+        else:
+            # conversion px to mm
+            #self.x = (self.texture.scenePos().x()*self._xBed)/550
+            #self.y = -(self.texture.scenePos().y()*self._yBed)//550
+            self.imageChangeLocX.emit(
+                (self.texture.pos().x()*self._xBed)/550)
+            # print("x="+str(self.texture.scenePos().x()))
+            # print("y="+str(self.texture.scenePos().y()+self.scalee*550-550))
+
+            self.imageChangeLocY.emit(
+                (self.texture.pos().y()*self._xBed)/-550)
+
+            # fix = self.texture.pos().y()+self.scalee*550-550
+            # tmp = -((fix*self._yBed)/550)
+            # self.imageChangeLocY.emit(tmp)
         return super().mouseMoveEvent(e)
 
     def setTool(self, tool):
         if tool == 'move':
-            self.texture.setFlag(QGraphicsItem.ItemIsMovable, True)
-            self.texture.setFlag(QGraphicsItem.ItemIsSelectable, True)
-        elif tool == 'scale':
             self.texture.setFlag(QGraphicsItem.ItemIsMovable, True)
             self.texture.setFlag(QGraphicsItem.ItemIsSelectable, True)
         else:
