@@ -3,7 +3,7 @@ from PySide2.QtWidgets import (QGridLayout, QVBoxLayout,
                                QLineEdit, QSlider,
                                QWidget, QHBoxLayout,
                                QGroupBox)
-from PySide2.QtGui import QPixmap, QDoubleValidator
+from PySide2.QtGui import QPixmap, QDoubleValidator, QImage
 from PySide2.QtCore import Qt, Signal, QBuffer
 from Controller import Controller
 from PIL import ImageEnhance, Image
@@ -36,6 +36,8 @@ class ImageManipulation(QWidget):
         contr.addSend("2d/image/rotation", self.imageRotateChangeSig)
 
         self.image = None
+        self.brightness = 1
+        self.contrast = 1
 
         horizontalLayout = QVBoxLayout()
         horizontalLayout.addWidget(self.initImageNameSection())
@@ -142,25 +144,38 @@ class ImageManipulation(QWidget):
         self.imagePIL = pil_im
 
     def valuechange2(self):
-        size = self.sl2.value()
-        size = size / 10
+        self.brightness = self.sl2.value()
+        self.brightness = self.brightness / 10
+
+        width, height = self.imagePIL.size
         enhancer = ImageEnhance.Brightness(self.imagePIL)
-        enhanced_im = enhancer.enhance(size)
-        img = ImageQt(enhanced_im)
-        pixmap = QPixmap.fromImage(img)
+        enhancer = enhancer.enhance(self.brightness)
+        enhancer = ImageEnhance.Contrast(enhancer)
+        enhanced_im = enhancer.enhance(self.contrast)
+
+        im2 = enhanced_im.convert("RGBA")
+        data = im2.tobytes("raw", "BGRA")
+        qim = QImage(data, width, height, QImage.Format_ARGB32)
+        pixmap = QPixmap.fromImage(qim)
+
+        # img = ImageQt(self.imagePIL)
+        # pixmap = QPixmap.fromImage(img)
         self.imageChangeSig.emit(pixmap)
 
     def contrast_change(self):
-        size = self.sl3.value()
-        size = size / 10
-        buffer = QBuffer()
-        buffer.open(QBuffer.ReadWrite)
-        self.image.save(buffer, "PNG")
-        pil_im = Image.open(io.BytesIO(buffer.data()))
-        enhancer = ImageEnhance.Contrast(pil_im)
-        enhanced_im = enhancer.enhance(size)
-        img = ImageQt(enhanced_im)
-        pixmap = QPixmap.fromImage(img)
+        self.contrast = self.sl3.value()
+        self.contrast = self.contrast / 10
+
+        width, height = self.imagePIL.size
+        enhancer = ImageEnhance.Contrast(self.imagePIL)
+        enhancer = enhancer.enhance(self.contrast)
+        enhancer = ImageEnhance.Brightness(enhancer)
+        enhanced_im = enhancer.enhance(self.brightness)
+        im2 = enhanced_im.convert("RGBA")
+        data = im2.tobytes("raw", "BGRA")
+        qim = QImage(data, width, height, QImage.Format_ARGB32)
+        pixmap = QPixmap.fromImage(qim)
+
         self.imageChangeSig.emit(pixmap)
 
     # getters
